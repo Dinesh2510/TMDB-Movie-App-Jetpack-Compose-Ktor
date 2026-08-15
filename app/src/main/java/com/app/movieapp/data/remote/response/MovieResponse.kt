@@ -1,15 +1,17 @@
 package com.app.movieapp.data.remote.response
 
 import com.app.movieapp.models.Movies
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class MovieResponse(
-    @SerializedName("page")
-    val page: Int,
-    @SerializedName("results")
-     val results: List<Movies>,
-    @SerializedName("total_pages")
-    val totalPages: Int,
-    @SerializedName("total_results")
-    val totalResults: Int
+    @SerialName("page")
+    val page: Int = 1,
+    @SerialName("results")
+    val results: List<Movies> = emptyList(),
+    @SerialName("total_pages")
+    val totalPages: Int = 0,
+    @SerialName("total_results")
+    val totalResults: Int = 0
 )

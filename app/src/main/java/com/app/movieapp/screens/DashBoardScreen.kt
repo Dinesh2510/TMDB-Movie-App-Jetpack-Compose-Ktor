@@ -61,12 +61,12 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.app.movieapp.BuildConfig
 import com.app.movieapp.R
+import com.app.movieapp.data.remote.response.GenreResponse
 import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.data.viewmodel.HomeViewModel
 import com.app.movieapp.graph.MovieAppScreen
@@ -93,10 +93,8 @@ import com.app.movieapp.utlis.MovieState
 import com.app.movieapp.utlis.ShowError
 import com.app.movieapp.utlis.SimpleLightTopAppBar
 import com.app.movieapp.utlis.Tools
-import com.ericg.neatflix.data.remote.response.GenreResponse
-import dagger.hilt.android.AndroidEntryPoint
+import org.koin.androidx.compose.koinViewModel
 
-@AndroidEntryPoint
 class DashBoardScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,7 +103,6 @@ class DashBoardScreen : ComponentActivity() {
                 Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
                     RootNavigation()
                 }
-
             }
         }
     }
@@ -113,8 +110,10 @@ class DashBoardScreen : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MovieHomeScreen(navController: NavHostController) {
-    var viewModel: HomeViewModel = hiltViewModel()
+fun MovieHomeScreen(
+    navController: NavHostController,
+    viewModel: HomeViewModel = koinViewModel()
+) {
     viewModel.registerNetwork(LocalContext.current)
     val networkResult by viewModel.networkType.collectAsState()
 
@@ -136,11 +135,14 @@ fun MovieHomeScreen(navController: NavHostController) {
     }
 }
 
-
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHostController) {
+fun HomeScreen(
+    viewModel: HomeViewModel = koinViewModel(),
+    navController: NavHostController
+) {
     val showExitDialog = remember { mutableStateOf(false) }
-    //Exit Dialog Code
+
+    // Exit Dialog
     if (showExitDialog.value) {
         IncludeApp().showExitDialog {
             showExitDialog.value = false
@@ -148,13 +150,11 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
     }
     BackHandler(enabled = true) {
         if (showExitDialog.value) {
-            // Exit the app
             android.os.Process.killProcess(android.os.Process.myPid())
         } else {
             showExitDialog.value = true
         }
     }
-
 
     val discoveryMovieState by viewModel.discoveryMovieResponses.collectAsState()
     val trendingMovieState by viewModel.trendingMovieResponses.collectAsState()
@@ -162,7 +162,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
     val upcomingMovieState by viewModel.upcomingMoviesResponses.collectAsState()
     val genresMovieState by viewModel.genresMoviesResponses.collectAsState()
     val moviesLazyPagingItems = viewModel.popularAllListState.collectAsLazyPagingItems()
-
 
     Column(
         modifier = Modifier
@@ -192,7 +191,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
         Spacer(modifier = Modifier.height(8.dp))
         when (genresMovieState) {
             is MovieState.Success -> {
-
                 val genres = (genresMovieState as MovieState.Success<GenreResponse?>).data?.genres
 
                 HomeHeader("Genres", {}, false)
@@ -208,12 +206,10 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
             is MovieState.Loading -> {
                 CenteredCircularProgressIndicator()
             }
-
         }
         Spacer(modifier = Modifier.height(8.dp))
         when (nowPlayingMovieState) {
             is MovieState.Success -> {
-
                 val movies =
                     (nowPlayingMovieState as MovieState.Success<MovieResponse?>).data?.results.orEmpty()
                 HomeHeader(
@@ -221,9 +217,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
                     { navController.navigate(MovieAppScreen.MOVIE_SEE_ALL.route + "/${nowPlayingAllListScreen}") },
                     true
                 )
-               /* val shuffledMediaList = movies.toMutableList()
-                shuffledMediaList.shuffle()*/
-
                 DisplayMovieList(movies, navController)
             }
 
@@ -235,7 +228,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
             is MovieState.Loading -> {
                 CenteredCircularProgressIndicator()
             }
-
         }
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -252,11 +244,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
             }
             moviesLazyPagingItems.apply {
                 when {
-                    loadState.refresh is LoadState.Loading -> {
-                        item { CenteredCircularProgressIndicator() }
-                    }
-
-                    loadState.append is LoadState.Loading -> {
+                    loadState.refresh is LoadState.Loading || loadState.append is LoadState.Loading -> {
                         item { CenteredCircularProgressIndicator() }
                     }
 
@@ -277,7 +265,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
 
         when (discoveryMovieState) {
             is MovieState.Success -> {
-
                 val movies =
                     (discoveryMovieState as MovieState.Success<MovieResponse?>).data?.results.orEmpty()
                 HomeHeader(
@@ -296,10 +283,8 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
             is MovieState.Loading -> {
                 CenteredCircularProgressIndicator()
             }
-
         }
         Spacer(modifier = Modifier.height(16.dp))
-
 
         when (upcomingMovieState) {
             is MovieState.Success -> {
@@ -321,11 +306,8 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), navController: NavHos
             is MovieState.Loading -> {
                 CenteredCircularProgressIndicator()
             }
-
         }
         Spacer(modifier = Modifier.height(16.dp))
-
-
     }
 }
 
@@ -335,7 +317,8 @@ fun DisplayHomeSlider(
 ) {
     Column {
         AutoSlidingCarousel(
-            images = moviesList, modifier = Modifier
+            images = moviesList,
+            modifier = Modifier
                 .fillMaxWidth()
                 .height(220.dp)
                 .padding(8.dp)
@@ -366,12 +349,11 @@ fun DisplayDiscoverList(movies: List<Movies>, navController: NavHostController) 
         items(movies.size) { index ->
             movies[index].let {
                 HomeThumbRectWithTitle(
-                    Constants.BASE_BACKDROP_IMAGE_URL + it.backdropPath, it.title
+                    Constants.BASE_BACKDROP_IMAGE_URL + it.backdropPath, it.displayTitle
                 ) {
                     navController.navigate(MovieAppScreen.MOVIE_HOME_DETAILS.route + "/${it.id}")
                 }
             }
-
         }
     }
 }
@@ -390,17 +372,19 @@ fun DisplayMovieList(movies: List<Movies>, navController: NavHostController) {
 @Composable
 fun DisplayGenreList(genre: List<Genre>?, navController: NavHostController) {
     LazyRow {
-        items(genre!!.size) { index ->
-            HomeGenre(genre[index].name) { navController.navigate(MovieAppScreen.MOVIE_GENRE_WISE.route + "/${genre[index].id}" + "/${genre[index].name}") }
+        items(genre?.size ?: 0) { index ->
+            genre?.get(index)?.let { item ->
+                HomeGenre(item.name) {
+                    navController.navigate(MovieAppScreen.MOVIE_GENRE_WISE.route + "/${item.id}/${item.name}")
+                }
+            }
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewMainScreen() {
-
-}
+fun PreviewMainScreen() {}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -413,14 +397,16 @@ fun SearchBarSample() {
     Box(
         Modifier
             .fillMaxSize()
-            .semantics { isTraversalGroup = true }) {
-        SearchBar(modifier = Modifier
-            .align(Alignment.TopCenter)
-            .semantics { traversalIndex = 0f },
+            .semantics { isTraversalGroup = true }
+    ) {
+        SearchBar(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .semantics { traversalIndex = 0f },
             query = text,
             onQueryChange = { text = it },
             onSearch = {
-                if (!text.isEmpty()) {
+                if (text.isNotEmpty()) {
                     expanded = false
                 } else {
                     Toast.makeText(context, "Enter the text", Toast.LENGTH_LONG).show()
@@ -430,13 +416,13 @@ fun SearchBarSample() {
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             trailingIcon = { Icon(Icons.Default.MoreVert, contentDescription = null) },
             active = expanded,
-            onActiveChange = {
-                expanded = it
-            }) {
+            onActiveChange = { expanded = it }
+        ) {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 repeat(4) { idx ->
                     val resultText = "Suggestion $idx"
-                    ListItem(headlineContent = { Text(resultText) },
+                    ListItem(
+                        headlineContent = { Text(resultText) },
                         supportingContent = { Text("Additional info") },
                         leadingContent = { Icon(Icons.Filled.Star, contentDescription = null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -446,7 +432,8 @@ fun SearchBarSample() {
                                 expanded = false
                             }
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp))
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
             }
         }
@@ -456,7 +443,7 @@ fun SearchBarSample() {
                 start = 16.dp, top = 72.dp, end = 16.dp, bottom = 16.dp
             ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.semantics { traversalIndex = 1f },
+            modifier = Modifier.semantics { traversalIndex = 1f }
         ) {
             val list = List(100) { "Text $it" }
             items(count = list.size) {
@@ -464,13 +451,12 @@ fun SearchBarSample() {
                     text = text,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 16.dp)
                 )
             }
         }
     }
 }
-
 
 @Composable
 fun ScreenAbout() {
@@ -502,13 +488,16 @@ fun ScreenAbout() {
                 )
                 Text(text = "Version 1.0", style = MaterialTheme.typography.labelSmall)
                 Spacer(modifier = Modifier.height(10.dp))
-                Button(modifier = Modifier
-                    .padding(vertical = 10.dp, horizontal = 50.dp)
-                    .fillMaxWidth(), onClick = {
-                    Tools.openLink(
-                        mContext, "https://codecanyon.net/user/dream_space/portfolio"
-                    )
-                }) {
+                Button(
+                    modifier = Modifier
+                        .padding(vertical = 10.dp, horizontal = 50.dp)
+                        .fillMaxWidth(),
+                    onClick = {
+                        Tools.openLink(
+                            mContext, "https://codecanyon.net/user/dream_space/portfolio"
+                        )
+                    }
+                ) {
                     Text("PURCHASE NOW")
                 }
                 ListItemAbout(R.drawable.ic_widgets, "More App", onClick = {
@@ -525,24 +514,20 @@ fun ScreenAbout() {
                         "https://play.google.com/store/apps/details?id=" + BuildConfig.APPLICATION_ID
                     )
                 })
-                ListItemAbout(R.drawable.ic_info, "About", onClick = {
-                    // onAction("ABOUT")
-                })
-
+                ListItemAbout(R.drawable.ic_info, "About", onClick = {})
             }
         }
     }
 }
 
-
 @Composable
 fun ListItemAbout(icon: Int, name: String, onClick: () -> Unit) {
-    Row(modifier = Modifier
-        .clickable {
-            onClick()
-        }
-        .padding(vertical = 12.dp, horizontal = 25.dp),
-        verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(vertical = 12.dp, horizontal = 25.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Icon(
             ImageVector.vectorResource(id = icon),
             modifier = Modifier.size(18.dp),

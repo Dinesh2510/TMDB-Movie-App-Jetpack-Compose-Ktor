@@ -1,13 +1,15 @@
 package com.app.movieapp.models
 
 import android.os.Parcelable
-import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Parcelize
 data class Genre(
-    @SerializedName("id")
-    val id: Int?,
-    @SerializedName("name")
-    val name: String
-): Parcelable
+    @SerialName("id")
+    val id: Int? = null,
+    @SerialName("name")
+    val name: String = ""
+) : Parcelable

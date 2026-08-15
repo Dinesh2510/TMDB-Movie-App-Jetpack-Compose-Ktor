@@ -1,83 +1,60 @@
 package com.app.movieapp.di
 
-import android.content.Context
-import androidx.room.Room
-import com.app.movieapp.data.local.MovieDao
-import com.app.movieapp.data.local.MovieDatabase
-import com.app.movieapp.utlis.Constants.Companion.BASE_URL
 import com.app.movieapp.data.remote.ApiService
-import com.app.movieapp.data.repository.MyListMovieRepository
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Converter
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.util.concurrent.TimeUnit
-import javax.inject.Singleton
+import com.app.movieapp.utlis.Constants.Companion.BASE_URL
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
+import org.koin.dsl.module
 
-@Module
-@InstallIn(SingletonComponent::class)
-object NetworkModule {
-    @Provides
-    fun providesBaseUrl(): String {
-        return BASE_URL
+val networkModule = module {
+
+    // 1. Provide Ktor HttpClient
+    single {
+        HttpClient(OkHttp) {
+            // Base URL and default headers
+            defaultRequest {
+                url(BASE_URL)
+                contentType(ContentType.Application.Json)
+            }
+
+            // JSON Content Negotiation (Replaces GsonConverterFactory)
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        prettyPrint = true
+                        isLenient = true
+                        ignoreUnknownKeys = true
+                        coerceInputValues = true
+                    }
+                )
+            }
+
+            // Logging (Replaces HttpLoggingInterceptor)
+            install(Logging) {
+                logger = Logger.SIMPLE
+                level = LogLevel.BODY
+            }
+
+            // Timeouts (Replaces OkHttpClient timeouts)
+            install(HttpTimeout) {
+                requestTimeoutMillis = 40_000
+                connectTimeoutMillis = 40_000
+                socketTimeoutMillis = 40_000
+            }
+        }
     }
 
-    @Provides
-    fun providesLoggingInterceptor(): HttpLoggingInterceptor {
-        return HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-    }
-
-    @Provides
-    fun provideOkHttpClient(loggingInterceptor: HttpLoggingInterceptor): OkHttpClient {
-        val okHttpClient = OkHttpClient().newBuilder()
-
-        okHttpClient.callTimeout(40, TimeUnit.SECONDS)
-        okHttpClient.connectTimeout(40, TimeUnit.SECONDS)
-        okHttpClient.readTimeout(40, TimeUnit.SECONDS)
-        okHttpClient.writeTimeout(40, TimeUnit.SECONDS)
-        okHttpClient.addInterceptor(loggingInterceptor)
-        okHttpClient.build()
-        return okHttpClient.build()
-    }
-
-    @Provides
-    fun provideConverterFactory(): Converter.Factory {
-        return GsonConverterFactory.create()
-    }
-
-    @Provides
-    fun provideRetrofitClient(okHttpClient: OkHttpClient, baseUrl: String, converterFactory: Converter.Factory): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(okHttpClient)
-            .addConverterFactory(converterFactory)
-            .build()
-    }
-
-    @Provides
-    fun provideApiService(retrofit: Retrofit): ApiService {
-        return retrofit.create(ApiService::class.java)
-    }
-
-
-    @Provides
-    @Singleton
-    fun provideLocalDatabase(@ApplicationContext context: Context): MovieDatabase =
-        Room.databaseBuilder(context, MovieDatabase::class.java, "watch_list_table")
-            .fallbackToDestructiveMigration().build()
-
-    @Provides
-    fun provideMovieDao(movieDatabase: MovieDatabase) = movieDatabase.movieDao()
-
-    @Singleton
-    @Provides
-    fun provideMyListRepository(movieDao: MovieDao): MyListMovieRepository =
-        MyListMovieRepository(movieDao = movieDao)
-
+    // 2. Provide ApiService (Ktor Api Service implementation)
+    single { ApiService(client = get()) }
 }

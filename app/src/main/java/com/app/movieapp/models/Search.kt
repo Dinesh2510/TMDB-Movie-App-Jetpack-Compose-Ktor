@@ -1,47 +1,65 @@
 package com.app.movieapp.models
 
-import com.google.gson.annotations.SerializedName
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-
+@Serializable
+@Parcelize
 data class Search(
-    @SerializedName("adult")
-    val adult: Boolean?,
-    @SerializedName("backdrop_path")
-    val backdropPath: String?,
-    @SerializedName("genre_ids")
-    val genreIds: List<Int>?,
-    @SerializedName("genres")
-    val genres: List<Genre>?,
-    @SerializedName("id")
-    val id: Int?,
-    @SerializedName("imdb_id")
-    val imdbId: String?,
-    @SerializedName("media_type")
-    val mediaType: String?,
-    @SerializedName("origin_country")
-    val originCountry: List<String>?,
-    @SerializedName("original_language")
-    val originalLanguage: String?,
-    @SerializedName("original_name")
-    val originalName: String?,
-    @SerializedName("original_title")
-    val originalTitle: String?,
-    @SerializedName("overview")
-    val overview: String?,
-    @SerializedName("popularity")
-    val popularity: Double?,
-    @SerializedName("poster_path")
-    val posterPath: String?,
-    @SerializedName("release_date", alternate = ["first_air_date"])
-    val releaseDate: String?,
-    @SerializedName("title", alternate = ["name"])
-    val title: String?,
-    @SerializedName("video")
-    val video: Boolean?,
-    @SerializedName("runtime")
-    val runtime: Int?,
-    @SerializedName("vote_average")
-    val voteAverage: Double?,
-    @SerializedName("vote_count")
-    val voteCount: Int?
-)
+    @SerialName("id")
+    val id: Int? = null,
+    @SerialName("adult")
+    val adult: Boolean? = false,
+    @SerialName("backdrop_path")
+    val backdropPath: String? = null,
+    @SerialName("genre_ids")
+    val genreIds: List<Int>? = emptyList(),
+    @SerialName("genres")
+    val genres: List<Genre>? = emptyList(),
+    @SerialName("imdb_id")
+    val imdbId: String? = null,
+    @SerialName("media_type")
+    val mediaType: String? = null,
+    @SerialName("origin_country")
+    val originCountry: List<String>? = emptyList(),
+    @SerialName("original_language")
+    val originalLanguage: String? = null,
+    @SerialName("original_name")
+    val originalName: String? = null,
+    @SerialName("original_title")
+    val originalTitle: String? = null,
+    @SerialName("overview")
+    val overview: String? = null,
+    @SerialName("popularity")
+    val popularity: Double? = 0.0,
+    @SerialName("poster_path")
+    val posterPath: String? = null,
+    @SerialName("release_date")
+    val releaseDate: String? = null,
+    @SerialName("first_air_date")
+    val firstAirDate: String? = null,
+    @SerialName("title")
+    val title: String? = null,
+    @SerialName("name")
+    val name: String? = null,
+    @SerialName("video")
+    val video: Boolean? = false,
+    @SerialName("runtime")
+    val runtime: Int? = null,
+    @SerialName("vote_average")
+    val voteAverage: Double? = 0.0,
+    @SerialName("vote_count")
+    val voteCount: Int? = 0
+) : Parcelable {
+
+    /**
+     * Helpers to handle Movie vs TV Show naming seamlessly
+     */
+    val displayTitle: String
+        get() = title ?: name ?: originalTitle ?: originalName ?: ""
+
+    val displayReleaseDate: String
+        get() = releaseDate ?: firstAirDate ?: ""
+}

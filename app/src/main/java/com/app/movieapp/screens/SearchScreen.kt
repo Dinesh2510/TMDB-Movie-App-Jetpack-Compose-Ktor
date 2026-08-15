@@ -42,7 +42,6 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -52,12 +51,13 @@ import com.app.movieapp.screens.Componets.ErrorStrip
 import com.app.movieapp.screens.Componets.SearchMovieCard
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
+import org.koin.androidx.compose.koinViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel = hiltViewModel(),
+    searchViewModel: SearchViewModel = koinViewModel (),
     navController: NavHostController,
 ) {
     val searchResult = searchViewModel.multiSearchState.value.collectAsLazyPagingItems()

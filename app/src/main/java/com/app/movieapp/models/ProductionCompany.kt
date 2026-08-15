@@ -1,17 +1,19 @@
 package com.app.movieapp.models
 
 import android.os.Parcelable
-import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Parcelize
 data class ProductionCompany(
-    @SerializedName("id")
-    val id: Int,
-    @SerializedName("logo_path")
-    val logoPath: String?,
-    @SerializedName("name")
-    val name: String,
-    @SerializedName("origin_country")
-    val originCountry: String
-): Parcelable
+    @SerialName("id")
+    val id: Int = 0,
+    @SerialName("logo_path")
+    val logoPath: String? = null,
+    @SerialName("name")
+    val name: String = "",
+    @SerialName("origin_country")
+    val originCountry: String = ""
+) : Parcelable

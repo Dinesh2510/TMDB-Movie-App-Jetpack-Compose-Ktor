@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.app.movieapp.R
 import com.app.movieapp.data.viewmodel.WatchListViewModel
@@ -38,12 +37,13 @@ import com.app.movieapp.screens.Componets.SearchMovieCard
 import com.app.movieapp.utlis.CenteredTopBar
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import com.app.movieapp.utlis.SimpleLightTopAppBar
+import org.koin.androidx.compose.koinViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SavedMovieScreen(
-    watchListViewModel: WatchListViewModel = hiltViewModel(),
+    watchListViewModel: WatchListViewModel = koinViewModel(),
     navController: NavHostController,
 ) {
     val roomData = watchListViewModel.myMovieData.value.collectAsState(initial = emptyList()).value

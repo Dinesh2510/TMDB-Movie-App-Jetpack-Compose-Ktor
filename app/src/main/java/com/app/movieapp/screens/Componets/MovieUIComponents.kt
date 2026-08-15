@@ -71,12 +71,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import coil.size.Scale
-import coil.size.Size
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.size.Scale
+import coil3.size.Size
+import coil3.toBitmap
 import com.app.movieapp.R
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Movies
@@ -116,19 +118,21 @@ fun HomeThumbWithTitle(
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.height(dimensionResource(id = R.dimen.home_grid_poster_height))
             )
-            Text(
-                text = homeMediaUI.title,
-                fontFamily = netflixFamily,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .padding(dimensionResource(id = R.dimen.small_padding))
-                    .fillMaxSize()
-                    .wrapContentHeight(align = CenterVertically),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyMedium,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 2
-            )
+            homeMediaUI.title?.let {
+                Text(
+                    text = it,
+                    fontFamily = netflixFamily,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .padding(dimensionResource(id = R.dimen.small_padding))
+                        .fillMaxSize()
+                        .wrapContentHeight(align = CenterVertically),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 2
+                )
+            }
         }
     }
 }
@@ -509,21 +513,15 @@ fun MovieItemSeeAll(
             ) {
 
                 if (imageState is AsyncImagePainter.State.Success) {
-
-                    val imageBitmap = imageState.result.drawable.toBitmap()
-
-
-
                     Image(
-                        bitmap = imageBitmap.asImageBitmap(),
+                        painter = imageState.painter,
                         contentDescription = title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.background),
+                            .background(MaterialTheme.colorScheme.background)
                     )
-
                 }
 
                 if (imageState is AsyncImagePainter.State.Error) {
@@ -559,7 +557,7 @@ fun MovieItemSeeAll(
                         horizontal = 12.dp,
                         vertical = 4.dp
                     ),
-                text = title,
+                text = title?:"",
                 fontFamily = netflixFamily,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,

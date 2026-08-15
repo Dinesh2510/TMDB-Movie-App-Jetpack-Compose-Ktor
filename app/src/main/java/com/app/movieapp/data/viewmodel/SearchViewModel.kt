@@ -9,37 +9,35 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import com.app.movieapp.data.repository.SearchRepository
 import com.app.movieapp.models.Search
-
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class SearchViewModel @Inject constructor(
-    private val searchRepository: SearchRepository,
+class SearchViewModel(
+    private val searchRepository: SearchRepository
 ) : ViewModel() {
-    private var _multiSearch = mutableStateOf<Flow<PagingData<Search>>>(emptyFlow())
-    val multiSearchState: State<Flow<PagingData<Search>>> = _multiSearch
 
+    private val _multiSearch = mutableStateOf<Flow<PagingData<Search>>>(emptyFlow())
+    val multiSearchState: State<Flow<PagingData<Search>>> = _multiSearch
 
     var searchParam = mutableStateOf("")
 
     init {
         searchParam.value = "Jack Reacher"
-        searchRemoteMovie(true)
+        searchRemoteMovie(includeAdult = true)
     }
 
     fun searchRemoteMovie(includeAdult: Boolean) {
         viewModelScope.launch {
-            if (searchParam.value.isNotEmpty()) {
+            if (searchParam.value.isNotBlank()) {
                 _multiSearch.value = searchRepository.multiSearch(
                     searchParams = searchParam.value,
-                    includeAdult
-                ).map { result ->
-                    result.filter { ((it.title != null || it.originalName != null || it.originalTitle != null)) }
+                    includeAdult = includeAdult
+                ).map { pagingData ->
+                    pagingData.filter { item ->
+                        item.title != null || item.originalName != null
+                    }
                 }.cachedIn(viewModelScope)
             }
         }

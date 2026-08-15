@@ -7,39 +7,35 @@ import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.data.repository.MovieDetailsRepository
 import com.app.movieapp.models.Cast
 import com.app.movieapp.utlis.MovieState
-import com.ericg.neatflix.data.remote.response.CastResponse
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class MovieDetailsViewModel @Inject constructor(private val repository: MovieDetailsRepository) :
-    ViewModel() {
-    private val _response: MutableStateFlow<MovieState<MovieDetailsDTO?>> =
+class MovieDetailsViewModel(
+    private val repository: MovieDetailsRepository
+) : ViewModel() {
+
+    private val _detailsMovieResponses: MutableStateFlow<MovieState<MovieDetailsDTO?>> =
         MutableStateFlow(MovieState.Loading)
-    val detailsMovieResponses: StateFlow<MovieState<MovieDetailsDTO?>> = _response
+    val detailsMovieResponses: StateFlow<MovieState<MovieDetailsDTO?>> = _detailsMovieResponses.asStateFlow()
 
-
-    private val _response2: MutableStateFlow<MovieState<MovieResponse?>> =
+    private val _similarMovieResponses: MutableStateFlow<MovieState<MovieResponse?>> =
         MutableStateFlow(MovieState.Loading)
-    val similarMovieResponses: StateFlow<MovieState<MovieResponse?>> = _response2
+    val similarMovieResponses: StateFlow<MovieState<MovieResponse?>> = _similarMovieResponses.asStateFlow()
 
-    private val _response3: MutableStateFlow<MovieState<List<Cast>?>> =
+    private val _castMovieResponses: MutableStateFlow<MovieState<List<Cast>?>> =
         MutableStateFlow(MovieState.Loading)
-    val castMovieResponses: StateFlow<MovieState<List<Cast>?>> = _response3
-
+    val castMovieResponses: StateFlow<MovieState<List<Cast>?>> = _castMovieResponses.asStateFlow()
 
     fun fetchMoviesDetails(movieId: String) {
         viewModelScope.launch {
             try {
                 val response = repository.getMoviesDetailsRepo(movieId).first()
-                _response.emit(MovieState.Success(response))
+                _detailsMovieResponses.value = MovieState.Success(response)
             } catch (e: Exception) {
-                val errorMessage = "An error occurred. Please try again."
-                _response.emit(MovieState.Error(errorMessage))
+                _detailsMovieResponses.value = MovieState.Error("An error occurred. Please try again.")
             }
         }
     }
@@ -48,10 +44,9 @@ class MovieDetailsViewModel @Inject constructor(private val repository: MovieDet
         viewModelScope.launch {
             try {
                 val response = repository.getSimilarMoviesRepo(movieId).first()
-                _response2.emit(MovieState.Success(response))
+                _similarMovieResponses.value = MovieState.Success(response)
             } catch (e: Exception) {
-                val errorMessage = "An error occurred. Please try again."
-                _response2.emit(MovieState.Error(errorMessage))
+                _similarMovieResponses.value = MovieState.Error("An error occurred. Please try again.")
             }
         }
     }
@@ -60,17 +55,11 @@ class MovieDetailsViewModel @Inject constructor(private val repository: MovieDet
         viewModelScope.launch {
             try {
                 val response = repository.getCastMoviesRepo(movieId).first()
-
-                // Assuming response contains a list of cast members (adjust based on your API structure)
-                val castList = response.castResult ?: emptyList()
-                _response3.emit(MovieState.Success(castList)) // Emit list of cast in Success state
-
+                val castList = response.castResult
+                _castMovieResponses.value = MovieState.Success(castList)
             } catch (e: Exception) {
-                val errorMessage = "An error occurred. Please try again."
-                _response3.emit(MovieState.Error(errorMessage))
+                _castMovieResponses.value = MovieState.Error("An error occurred. Please try again.")
             }
         }
     }
-
 }
-

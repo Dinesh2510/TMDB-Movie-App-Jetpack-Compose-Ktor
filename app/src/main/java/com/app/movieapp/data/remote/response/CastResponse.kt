@@ -1,11 +1,13 @@
-package com.ericg.neatflix.data.remote.response
+package com.app.movieapp.data.remote.response
 
 import com.app.movieapp.models.Cast
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class CastResponse(
-    @SerializedName("id")
-    val id: Int,
-    @SerializedName("cast")
-    val castResult: List<Cast>
+    @SerialName("id")
+    val id: Int = 0,
+    @SerialName("cast")
+    val castResult: List<Cast> = emptyList()
 )

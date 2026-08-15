@@ -1,14 +1,13 @@
 package com.app.movieapp.data.repository
 
-
 import com.app.movieapp.data.local.MovieDao
 import com.app.movieapp.data.local.WatchListModel
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
 
-class MyListMovieRepository @Inject constructor(private val movieDao: MovieDao) {
+class MyListMovieRepository(private val movieDao: MovieDao) {
+
     suspend fun insertMovieInList(myListMovie: WatchListModel) {
-        movieDao.insertMovieInList( myListMovie)
+        movieDao.insertMovieInList(myListMovie)
     }
 
     suspend fun removeFromList(mediaId: Int) {

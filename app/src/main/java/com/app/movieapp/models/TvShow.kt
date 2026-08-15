@@ -1,45 +1,60 @@
 package com.app.movieapp.models
 
 import android.os.Parcelable
-import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Parcelize
 data class TvShow(
-    @SerializedName("adult")
-    val adult: Boolean,
-    @SerializedName("backdrop_path")
-    val backdropPath: String?,
-    @SerializedName("genre_ids")
-    val genreIds: List<Int>?,
-    @SerializedName("genres")
-    val genres: List<Genre>?,
-    @SerializedName("id")
-    val id: Int,
-    @SerializedName("imdb_id")
-    val imdbId: String?,
-    @SerializedName("production_companies")
-    val productionCompanies: List<ProductionCompany>?,
-    @SerializedName("original_language")
-    val originalLanguage: String,
-    @SerializedName("original_title")
-    val originalTitle: String,
-    @SerializedName("overview")
-    val overview: String,
-    @SerializedName("popularity")
-    val popularity: Double,
-    @SerializedName("poster_path")
-    val posterPath: String?,
-    @SerializedName("release_date")
-    val releaseDate: String,
-    @SerializedName("runtime")
-    val runtime: Int,
-    @SerializedName("title")
-    val title: String,
-    @SerializedName("video")
-    val video: Boolean,
-    @SerializedName("vote_average")
-    val voteAverage: Double,
-    @SerializedName("vote_count")
-    val voteCount: Int
-): Parcelable
+    @SerialName("id")
+    val id: Int = 0,
+    @SerialName("adult")
+    val adult: Boolean = false,
+    @SerialName("backdrop_path")
+    val backdropPath: String? = null,
+    @SerialName("genre_ids")
+    val genreIds: List<Int>? = emptyList(),
+    @SerialName("genres")
+    val genres: List<Genre>? = emptyList(),
+    @SerialName("imdb_id")
+    val imdbId: String? = null,
+    @SerialName("production_companies")
+    val productionCompanies: List<ProductionCompany>? = emptyList(),
+    @SerialName("original_language")
+    val originalLanguage: String = "",
+    @SerialName("original_name")
+    val originalName: String = "",
+    @SerialName("original_title")
+    val originalTitle: String = "",
+    @SerialName("overview")
+    val overview: String = "",
+    @SerialName("popularity")
+    val popularity: Double = 0.0,
+    @SerialName("poster_path")
+    val posterPath: String? = null,
+    @SerialName("first_air_date")
+    val firstAirDate: String? = null,
+    @SerialName("release_date")
+    val releaseDate: String? = null,
+    @SerialName("runtime")
+    val runtime: Int? = null,
+    @SerialName("name")
+    val name: String? = null,
+    @SerialName("title")
+    val title: String? = null,
+    @SerialName("video")
+    val video: Boolean = false,
+    @SerialName("vote_average")
+    val voteAverage: Double = 0.0,
+    @SerialName("vote_count")
+    val voteCount: Int = 0
+) : Parcelable {
+
+    val displayTitle: String
+        get() = name ?: title ?: originalName ?: originalTitle ?: ""
+
+    val displayAirDate: String
+        get() = firstAirDate ?: releaseDate ?: ""
+}

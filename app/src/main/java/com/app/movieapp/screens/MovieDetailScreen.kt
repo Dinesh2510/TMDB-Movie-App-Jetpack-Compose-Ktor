@@ -24,12 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,7 +39,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -50,16 +46,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import com.app.movieapp.R
 import com.app.movieapp.data.local.WatchListModel
 import com.app.movieapp.data.remote.response.MovieDetailsDTO
@@ -75,20 +69,23 @@ import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import com.app.movieapp.utlis.MovieState
 import com.app.movieapp.utlis.ShowError
 import com.app.movieapp.utlis.netflixFamily
+import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 
 @Composable
-fun MovieDetailsScreen(navController: NavHostController, movieId: String) {
-    var primaryColor = Color(0xFF001945)
-    var viewModel: MovieDetailsViewModel = hiltViewModel()
-    var watchListViewModel: WatchListViewModel = hiltViewModel()
+fun MovieDetailsScreen(
+    navController: NavHostController,
+    movieId: String,
+    viewModel: MovieDetailsViewModel = koinViewModel(),
+    watchListViewModel: WatchListViewModel = koinViewModel()
+) {
+    val primaryColor = Color(0xFF001945)
     val detailsMovieState by viewModel.detailsMovieResponses.collectAsState()
     val castMovieState by viewModel.castMovieResponses.collectAsState()
     val similarMovieState by viewModel.similarMovieResponses.collectAsState()
 
-    // Fetch data on launch (optional):
-    LaunchedEffect(Unit) {
+    LaunchedEffect(movieId) {
         viewModel.fetchMoviesDetails(movieId)
         viewModel.fetchSimilarMovies(movieId)
         viewModel.fetchCasteOfMovies(movieId)
@@ -103,7 +100,9 @@ fun MovieDetailsScreen(navController: NavHostController, movieId: String) {
         when (detailsMovieState) {
             is MovieState.Success -> {
                 val moviesInfo = (detailsMovieState as MovieState.Success<MovieDetailsDTO?>).data
-                DisplayMovieData(moviesInfo, navController,watchListViewModel)
+                if (moviesInfo != null) {
+                    DisplayMovieData(moviesInfo, navController, watchListViewModel)
+                }
             }
 
             is MovieState.Error -> {
@@ -119,9 +118,7 @@ fun MovieDetailsScreen(navController: NavHostController, movieId: String) {
 
         when (castMovieState) {
             is MovieState.Success -> {
-                val castList =
-                    ((castMovieState as MovieState.Success<List<Cast>?>).data as? List<Cast>)
-                        ?: emptyList()
+                val castList = (castMovieState as MovieState.Success<List<Cast>?>).data ?: emptyList()
                 CastMediaSection(castList)
             }
 
@@ -131,7 +128,6 @@ fun MovieDetailsScreen(navController: NavHostController, movieId: String) {
 
             is MovieState.Loading -> {
                 CenteredCircularProgressIndicator()
-                // You can show a separate loading indicator here if desired
             }
         }
 
@@ -141,7 +137,7 @@ fun MovieDetailsScreen(navController: NavHostController, movieId: String) {
             is MovieState.Success -> {
                 val movieList = (similarMovieState as MovieState.Success<MovieResponse?>).data
                 if (movieList != null) {
-                    SimilarMediaSection(movieList,navController)
+                    SimilarMediaSection(movieList, navController)
                 }
             }
 
@@ -151,12 +147,10 @@ fun MovieDetailsScreen(navController: NavHostController, movieId: String) {
 
             is MovieState.Loading -> {
                 CenteredCircularProgressIndicator()
-                // You can show a separate loading indicator here if desired
             }
         }
     }
 }
-
 
 @Composable
 fun CastMediaSection(castList: List<Cast>) {
@@ -186,8 +180,6 @@ fun CastMediaSection(castList: List<Cast>) {
             }
         }
     }
-
-
 }
 
 @Composable
@@ -213,7 +205,7 @@ fun CastMemberItem(cast: Cast) {
                     .aspectRatio(1f)
             ) {
                 Image(
-                    painter = painterResource(R.drawable.user), // Replace with your placeholder
+                    painter = painterResource(R.drawable.user),
                     contentDescription = "Cast Member Placeholder",
                     modifier = Modifier
                         .fillMaxSize()
@@ -227,7 +219,8 @@ fun CastMemberItem(cast: Cast) {
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black), startY = 100f
+                        colors = listOf(Color.Transparent, Color.Black),
+                        startY = 100f
                     )
                 )
         )
@@ -238,7 +231,8 @@ fun CastMemberItem(cast: Cast) {
             contentAlignment = Alignment.BottomStart
         ) {
             Text(
-                text = cast.name, style = MaterialTheme.typography.headlineMedium.copy(
+                text = cast.name,
+                style = MaterialTheme.typography.headlineMedium.copy(
                     color = Color.White,
                     fontFamily = netflixFamily,
                     fontWeight = FontWeight.Medium,
@@ -248,30 +242,31 @@ fun CastMemberItem(cast: Cast) {
             )
         }
     }
-
-
 }
 
 @Composable
 fun DisplayMovieData(
-    moviesInfo: MovieDetailsDTO?,
+    moviesInfo: MovieDetailsDTO,
     navController: NavHostController,
     watchListViewModel: WatchListViewModel
 ) {
-    watchListViewModel.exist(moviesInfo!!.id)
-    var  exist = watchListViewModel.exist.value
+    LaunchedEffect(moviesInfo.id) {
+        watchListViewModel.exist(moviesInfo.id)
+    }
+    val exist = watchListViewModel.exist.value
 
-    Log.e("TAG_exist_>", "DisplayMovieData: "+exist )
-    var context = LocalContext.current
+    Log.e("TAG_exist_>", "DisplayMovieData: $exist")
+    val context = LocalContext.current
     val date = SimpleDateFormat.getDateInstance().format(Date())
     val myListMovie = WatchListModel(
-        mediaId = moviesInfo!!.id,
+        mediaId = moviesInfo.id,
         imagePath = moviesInfo.posterPath,
         title = moviesInfo.title,
         releaseDate = moviesInfo.releaseDate,
         rating = moviesInfo.voteAverage,
         addedOn = date
     )
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -280,33 +275,31 @@ fun DisplayMovieData(
                 .fillMaxWidth()
                 .height(250.dp)
         ) {
-
-            Image(painter = rememberAsyncImagePainter(Constants.BASE_BACKDROP_IMAGE_URL + moviesInfo!!.backdropPath),
+            Image(
+                painter = rememberAsyncImagePainter(Constants.BASE_BACKDROP_IMAGE_URL + moviesInfo.backdropPath),
                 contentDescription = "Backdrop Image",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(250.dp)
-                    .graphicsLayer {
-                        alpha = 0.7f
-                    })
+                    .graphicsLayer { alpha = 0.7f }
+            )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black), startY = 100f
+                            colors = listOf(Color.Transparent, Color.Black),
+                            startY = 100f
                         )
                     )
             )
             Icon(
                 imageVector = Icons.Default.ArrowBackIosNew,
                 tint = Color.White,
-                contentDescription = "",
+                contentDescription = "Back",
                 modifier = Modifier
-                    .clickable {
-                        navController.popBackStack()
-                    }
+                    .clickable { navController.popBackStack() }
                     .padding(24.dp)
             )
             Image(
@@ -321,45 +314,29 @@ fun DisplayMovieData(
                     .clip(RoundedCornerShape(8.dp))
             )
             IconButton(
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 16.dp, end = 4.dp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 16.dp, end = 4.dp),
                 onClick = {
-                if (exist != 0) {
-                    watchListViewModel.removeFromWatchList(mediaId = moviesInfo.id)
-                    Toast.makeText(
-                        context,
-                        "Remove From your Watch List",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                } else {
-                    watchListViewModel.addToWatchList(myListMovie)
-                    Toast.makeText(
-                        context,
-                        "Added to your Watch List",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    Toast.makeText(
-                        context,
-                        "Added to your Watch List",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }) {
-                Icon(
-                    imageVector = if (exist != 0) {
-                        Icons.Default.Bookmark
+                    if (exist != 0) {
+                        watchListViewModel.removeFromWatchList(mediaId = moviesInfo.id)
+                        Toast.makeText(context, "Removed from your Watch List", Toast.LENGTH_SHORT).show()
                     } else {
-                        Icons.Default.BookmarkBorder
-                    },
+                        watchListViewModel.addToWatchList(myListMovie)
+                        Toast.makeText(context, "Added to your Watch List", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = if (exist != 0) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                     tint = Color.White,
-                    contentDescription = "Review"
+                    contentDescription = "Bookmark"
                 )
             }
-
         }
         Spacer(modifier = Modifier.height(80.dp))
         Text(
-            text = moviesInfo!!.title,
+            text = moviesInfo.title,
             fontFamily = netflixFamily,
             fontWeight = FontWeight.Medium,
             fontSize = 25.sp,
@@ -370,9 +347,7 @@ fun DisplayMovieData(
                 .padding(8.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Box(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             LazyRow(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalArrangement = Arrangement.Center
@@ -381,57 +356,54 @@ fun DisplayMovieData(
                     GenreChip(genre = moviesInfo.genres[index].name)
                 }
             }
-
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Box(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(8.dp)
             ) {
-                val context = LocalContext.current
-                MovieField(context.getString(R.string.release_date), moviesInfo.releaseDate)
-                MovieField("Duration", moviesInfo?.runtime.toString() + " min.")
-                MovieField("Rating", "⭐ " + moviesInfo.voteAverage)
-                MovieField("Language", moviesInfo.spokenLanguages[0].name)
+                val currentContext = LocalContext.current
+                MovieField(currentContext.getString(R.string.release_date), moviesInfo.releaseDate)
+                MovieField("Duration", "${moviesInfo.runtime ?: 0} min.")
+                MovieField("Rating", "⭐ ${moviesInfo.voteAverage}")
+                MovieField("Language", moviesInfo.spokenLanguages.firstOrNull()?.name ?: "N/A")
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        moviesInfo.overview?.let { OverviewSection(it, moviesInfo.tagline) }
-
+        moviesInfo.overview.let { OverviewSection(it?:"", moviesInfo.tagline) }
     }
 }
 
 @Composable
 fun OverviewSection(overview: String, tagline: String?) {
     Column {
-        Text(
-            modifier = Modifier.padding(horizontal = 22.dp),
-            text = tagline!!,
-            fontFamily = netflixFamily,
-            fontSize = 17.sp,
-            fontStyle = FontStyle.Italic,
-            color = MaterialTheme.colorScheme.onSurface,
-            lineHeight = 16.sp
-        )
+        if (!tagline.isNullOrBlank()) {
+            Text(
+                modifier = Modifier.padding(horizontal = 22.dp),
+                text = tagline,
+                fontFamily = netflixFamily,
+                fontSize = 17.sp,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = 16.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-
-        Text(
-            modifier = Modifier.padding(horizontal = 22.dp),
-            text = overview,
-            fontFamily = netflixFamily,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            lineHeight = 16.sp
-        )
-
+        if (overview.isNotBlank()) {
+            Text(
+                modifier = Modifier.padding(horizontal = 22.dp),
+                text = overview,
+                fontFamily = netflixFamily,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = 16.sp
+            )
+        }
     }
 }
 
@@ -485,45 +457,40 @@ fun SimilarMediaSection(
     navController: NavHostController,
 ) {
     val mediaList = media.results
-    if (mediaList.isNotEmpty()) Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Similar Movies",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontFamily = netflixFamily,
-                fontSize = 18.sp
-            )
-
-
-        }
-        LazyRow(
-            modifier = Modifier.padding(
-                start = 22.dp, end = 22.dp, top = 8.dp, bottom = 16.dp
-            )
-        ) {
-            items(media.results.size) {
-                HomeSmallThumb(
-                    BASE_POSTER_IMAGE_URL + mediaList[it].posterPath
-                ) {
-                    navController.navigate(MovieAppScreen.MOVIE_HOME_DETAILS.route + "/${mediaList[it].id}")
+    if (mediaList.isNotEmpty()) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Similar Movies",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = netflixFamily,
+                    fontSize = 18.sp
+                )
+            }
+            LazyRow(
+                modifier = Modifier.padding(
+                    start = 22.dp, end = 22.dp, top = 8.dp, bottom = 16.dp
+                )
+            ) {
+                items(mediaList.size) { index ->
+                    HomeSmallThumb(
+                        BASE_POSTER_IMAGE_URL + mediaList[index].posterPath
+                    ) {
+                        navController.navigate(MovieAppScreen.MOVIE_HOME_DETAILS.route + "/${mediaList[index].id}")
+                    }
                 }
             }
         }
     }
-
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewMainScreen2() {
-
-
-}
-
+fun PreviewMainScreen2() {}

@@ -1,9 +1,11 @@
-package com.ericg.neatflix.data.remote.response
+package com.app.movieapp.data.remote.response
 
 import com.app.movieapp.models.Genre
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class GenreResponse(
-    @SerializedName("genres")
-    val genres: List<Genre>
+    @SerialName("genres")
+    val genres: List<Genre> = emptyList()
 )

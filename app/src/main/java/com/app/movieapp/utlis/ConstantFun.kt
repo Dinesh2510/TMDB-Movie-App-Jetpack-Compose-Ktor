@@ -55,7 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import com.app.movieapp.R
 import com.app.movieapp.models.Movies
 import kotlinx.coroutines.delay
@@ -208,16 +208,18 @@ fun AutoSlidingCarousel(
             )
 
             // Title
-            Text(
-                text = images[currentIndex].title,
-                color = Color.White,
-                fontFamily = netflixFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-            )
+            images[currentIndex].title?.let {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    fontFamily = netflixFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                )
+            }
 
 
         }
