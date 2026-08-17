@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TMDB Compose"
+rootProject.name = "TMDB Ktor"
 include(":app")

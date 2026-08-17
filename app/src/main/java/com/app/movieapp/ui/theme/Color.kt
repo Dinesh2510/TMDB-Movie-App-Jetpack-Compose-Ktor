@@ -1,6 +1,7 @@
 package com.app.movieapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 
 val md_theme_light_primary = Color(0xFF375CA9)
 val md_theme_light_onPrimary = Color(0xFFFFFFFF)
@@ -66,3 +67,60 @@ val md_theme_dark_scrim = Color(0xFF000000)
 
 
 val seed = Color(0xFF0C1B3A)
+
+
+
+object TmdbTheme {
+    // --- Cinematic Neutral & Background Colors ---
+    // Deep cosmic colors for OLED-friendly dark mode. These deep indigos
+    // provide better depth than plain black.
+    val BackgroundDeep = Color(0xFF0C0A11) // Deepest cosmic base
+    val BackgroundMedium = Color(0xFF14121E) // For elevation/cards
+    val BackgroundLight = Color(0xFF1F1C2C) // Lighter contrast/dividers
+
+    // Text & Content Colors
+    val TextPrimary = Color(0xFFFFFFFF) // Full white for titles/pop
+    val TextSecondary = Color(0xFF9EA3B0) // Softened grey/blue for details
+
+    // --- Glass & Liquid Colors ---
+    // These are the core transparent surfaces and edge refraction borders.
+    // Glass surface backdrop
+    val GlassSurface = Color.White.copy(alpha = 0.08f)
+
+    // Glass refraction border: Subtle fade to simulate light bending on the edge.
+    val GlassBorder = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.30f), // Crisp top highlight
+            Color.White.copy(alpha = 0.05f)  // Soft bottom fade
+        )
+    )
+
+    // --- Accent & Brand Colors ---
+    // Vibrant Neon Coral: The main CTA color (e.g., "Watch Trailer" button).
+    val PrimaryGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFFF5252), // Primary pop
+            Color(0xFFFF7A00)  // Coral blend
+        )
+    )
+
+    // Electric Violet: Secondary highlight for active Genre Chips.
+    val AccentGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFF7F00FF),
+            Color(0xFFE100FF)
+        )
+    )
+
+    // Cinematic Background Gradient: Deep cosmic colors fade through black.
+    val BackgroundGradient = Brush.verticalGradient(
+        colors = listOf(
+            BackgroundDeep,
+            Color(0xFF12101A),
+            BackgroundDeep
+        )
+    )
+
+    // Star Rating Gold
+    val RatingGold = Color(0xFFFFD700)
+}
