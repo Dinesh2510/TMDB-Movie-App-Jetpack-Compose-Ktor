@@ -1,5 +1,6 @@
 package com.app.movieapp.screens
 
+import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,11 +31,13 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
@@ -54,9 +58,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RenderEffect
+import androidx.compose.ui.graphics.Shader
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -68,52 +74,45 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 
-// --- DESIGN SYSTEM & THEME ---
-// Defining specific cosmic dark, glass, and accent colors for maximum pop.
-object CinematicTheme {
-    // Screen background (matched to deep indigos in the reference)
+// --- THEME DEFINITION ---
+object FrostedGlassTheme {
     val ScreenBgGradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFF0F0E17), Color(0xFF161522), Color(0xFF0F0E17))
+        colors = listOf(Color(0xFF0D0C14), Color(0xFF151322), Color(0xFF0D0C14))
     )
 
-    // Main Dark Glass Surface for Navigation (High Contrast with white content)
-    val NavigationSurface = Color(0xFF181726).copy(alpha = 0.85f) // Dark indigo-grey, semi-translucent
+    // Liquid Glass Translucent Surface
+    val GlassSurfaceColor = Color(0xFF1E1B2E).copy(alpha = 0.55f)
 
-    // Liquid Glass Edges/Refraction Border
+    // Glass Refraction Border (Top edge highlight fading down)
     val GlassBorderGradient = Brush.verticalGradient(
         colors = listOf(
-            Color.White.copy(alpha = 0.50f), // Top light highlight
-            Color.White.copy(alpha = 0.15f)  // Bottom soft fade
+            Color.White.copy(alpha = 0.45f),
+            Color.White.copy(alpha = 0.08f)
         )
     )
 
-    // Active Selection Accent (Vibrant Coral/Orange Gradient Pill)
+    // Active Tab Gradient Pill (Vibrant Coral/Orange)
     val ActiveGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFFEA5B43), Color(0xFFFF7A00))
+        colors = listOf(Color(0xFFFF5252), Color(0xFFFF7A00))
     )
-
-    // Foreground Text & Icons
-    val TextPrimary = Color.White
-    val TextSecondary = Color.White.copy(alpha = 0.70f)
 }
 
-// --- DATA MODELS ---
-data class MovieItem(
+// --- DATA MODELS & ROUTES ---
+data class TmdbMovie(
     val id: Int,
     val title: String,
-    val subtitle: String,
-    val imageUrl: String
+    val rating: String,
+    val posterUrl: String
 )
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Filled.Home)
     object Movies : Screen("movies", "Movies", Icons.Filled.Movie)
-    object Favorites : Screen("favorites", "Favorites", Icons.Filled.Star)
+    object Saved : Screen("saved", "Saved", Icons.Filled.Bookmark)
     object Profile : Screen("profile", "Profile", Icons.Filled.Person)
 }
 
-// --- UPDATED BOTTOM NAVIGATION BAR ---
-// Strictly separates navigation pill from Search FAB with specific dark glass styling.
+// --- FLOATING LIQUID FROSTED GLASS NAVIGATION BAR ---
 @Composable
 fun FloatingAirNavigationBar(
     currentRoute: String?,
@@ -122,7 +121,7 @@ fun FloatingAirNavigationBar(
     modifier: Modifier = Modifier
 ) {
     val tabs = remember {
-        listOf(Screen.Home, Screen.Movies, Screen.Favorites, Screen.Profile)
+        listOf(Screen.Home, Screen.Movies, Screen.Saved, Screen.Profile)
     }
 
     Row(
@@ -132,27 +131,33 @@ fun FloatingAirNavigationBar(
                 start = 16.dp,
                 end = 16.dp,
                 top = 12.dp,
-                // Pushes the bar up to float correctly over device gesture bars.
                 bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        // LAYER 1: Main Dark Glass Navigation Pill (High Contrast Surface)
+        // MAIN NAVIGATION PILL CONTAINER
         Box(
             modifier = Modifier
                 .height(68.dp)
                 .weight(1f)
-                .shadow(
-                    elevation = 16.dp,
-                    shape = CircleShape,
-                    ambientColor = Color.Black.copy(alpha = 0.3f),
-                    spotColor = Color.Black.copy(alpha = 0.4f)
-                )
-                .clip(CircleShape)
-                .border(1.5.dp, CinematicTheme.GlassBorderGradient, CircleShape)
-                .background(CinematicTheme.NavigationSurface)
         ) {
+            // LAYER 1: Frosted Glass Background with Shadow & Border
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .shadow(
+                        elevation = 20.dp,
+                        shape = CircleShape,
+                        ambientColor = Color.Black.copy(alpha = 0.4f),
+                        spotColor = Color.Black.copy(alpha = 0.5f)
+                    )
+                    .clip(CircleShape)
+                    .border(1.5.dp, FrostedGlassTheme.GlassBorderGradient, CircleShape)
+                    .background(FrostedGlassTheme.GlassSurfaceColor)
+            )
+
+            // LAYER 2: Crisp Active Pill & Icons
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -161,14 +166,12 @@ fun FloatingAirNavigationBar(
                 tabs.forEach { screen ->
                     val isSelected = currentRoute == screen.route
 
-                    // Content color transitions (White on Dark Glass)
                     val animatedContentColor by animateColorAsState(
-                        targetValue = if (isSelected) CinematicTheme.TextPrimary else CinematicTheme.TextSecondary,
+                        targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.65f),
                         animationSpec = tween(durationMillis = 250),
                         label = "tabContent"
                     )
 
-                    // Spring scale animation for selected icon/text Column
                     val scale by animateFloatAsState(
                         targetValue = if (isSelected) 1.08f else 1.0f,
                         animationSpec = spring(
@@ -182,11 +185,10 @@ fun FloatingAirNavigationBar(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .padding(4.dp)
+                            .padding(5.dp)
                             .clip(CircleShape)
                             .then(
-                                // LAYER 2: SELECTED ACCENT (Coral Gradient Pill)
-                                if (isSelected) Modifier.background(CinematicTheme.ActiveGradient)
+                                if (isSelected) Modifier.background(FrostedGlassTheme.ActiveGradient)
                                 else Modifier
                             )
                             .clickable(
@@ -222,19 +224,19 @@ fun FloatingAirNavigationBar(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // LAYER 3: Standalone Right Circular Search FAB (Matching Dark Glass surface)
+        // SEPARATE SEARCH FAB
         Box(
             modifier = Modifier
                 .size(68.dp)
                 .shadow(
-                    elevation = 16.dp,
+                    elevation = 20.dp,
                     shape = CircleShape,
-                    ambientColor = Color.Black.copy(alpha = 0.3f),
-                    spotColor = Color.Black.copy(alpha = 0.4f)
+                    ambientColor = Color.Black.copy(alpha = 0.4f),
+                    spotColor = Color.Black.copy(alpha = 0.5f)
                 )
                 .clip(CircleShape)
-                .border(1.5.dp, CinematicTheme.GlassBorderGradient, CircleShape)
-                .background(CinematicTheme.NavigationSurface)
+                .border(1.5.dp, FrostedGlassTheme.GlassBorderGradient, CircleShape)
+                .background(FrostedGlassTheme.GlassSurfaceColor)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -260,7 +262,6 @@ fun MainAppScreen() {
 
     Scaffold(
         containerColor = Color.Transparent,
-        // Disables standard Scaffold padding calculation so full gradient bleeds correctly.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             FloatingAirNavigationBar(
@@ -274,35 +275,38 @@ fun MainAppScreen() {
                         restoreState = true
                     }
                 },
-                onSearchClicked = { /* Handle search Activity launch here */ }
+                onSearchClicked = { }
             )
         }
     ) { _ ->
-        // Note: innerPadding intentionally omitted from NavHost for cinematic background flow.
         NavHost(
             navController = navController,
-            startDestination = Screen.Movies.route, // Highlighting 'Movies' active tab
+            startDestination = Screen.Movies.route,
             modifier = Modifier.fillMaxSize()
         ) {
-            composable(Screen.Home.route) { ScreenContent("Home Screen") }
-            composable(Screen.Movies.route) { ScreenContent("Movies Screen") }
-            composable(Screen.Favorites.route) { ScreenContent("Favorites Screen") }
-            composable(Screen.Profile.route) { ScreenContent("Profile Screen") }
+            composable(Screen.Home.route) { MovieGridScreen("Trending on TMDB") }
+            composable(Screen.Movies.route) { MovieGridScreen("Movies") }
+            composable(Screen.Saved.route) { MovieGridScreen("Saved Watchlist") }
+            composable(Screen.Profile.route) { MovieGridScreen("User Profile") }
         }
     }
 }
 
-// --- SCREEN CONTENT (Scrollable Feed) ---
+// --- MOVIE GRID SCREEN (Matches mockup posters) ---
 @Composable
-fun ScreenContent(title: String) {
-    // Generate 50 items for the feed
-    val itemsList = remember(title) {
-        List(50) { index ->
-            MovieItem(
+fun MovieGridScreen(title: String) {
+    val moviesList = remember(title) {
+        List(20) { index ->
+            TmdbMovie(
                 id = index + 1,
-                title = "$title Item #${index + 1}",
-                subtitle = "Action, Drama, Sci-Fi • 2026",
-                imageUrl = "https://picsum.photos/seed/${title}_${index + 1}/200/300"
+                title = when (index % 4) {
+                    0 -> "Dune: Part Two"
+                    1 -> "Oppenheimer"
+                    2 -> "The Batman"
+                    else -> "Spider-Man: No Way Home"
+                },
+                rating = "★ ${8 + (index % 2)}.${index % 9}",
+                posterUrl = "https://picsum.photos/seed/tmdb_${index + 1}/300/450"
             )
         }
     }
@@ -310,36 +314,31 @@ fun ScreenContent(title: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CinematicTheme.ScreenBgGradient)
+            .background(FrostedGlassTheme.ScreenBgGradient)
     ) {
-        AnimatedContent(
-            targetState = itemsList,
-            transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
-            label = "screenTransition"
-        ) { targetList ->
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = 48.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                    // Clearance to ensure last items scroll above the floating bottom bar.
-                    bottom = 120.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Text(
-                        text = "$title Collection",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(48.dp))
+            Text(
+                text = title,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-                items(targetList, key = { it.id }) { item ->
-                    MovieListItemCard(item = item)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 120.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(moviesList, key = { it.id }) { movie ->
+                    MovieGridCard(movie = movie)
                 }
             }
         }
@@ -347,62 +346,54 @@ fun ScreenContent(title: String) {
 }
 
 @Composable
-fun MovieListItemCard(item: MovieItem) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(90.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            // Translucent dark glass card surface
-            containerColor = Color.White.copy(alpha = 0.15f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
+fun MovieGridCard(movie: TmdbMovie) {
+    Column {
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .aspectRatio(0.7f),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(74.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.DarkGray)
-            )
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = item.title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
-                    maxLines = 1
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = movie.posterUrl,
+                    contentDescription = movie.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = item.subtitle,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White.copy(alpha = 0.7f),
-                    maxLines = 1
-                )
+
+                // Rating Badge
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.65f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = movie.rating,
+                        color = Color(0xFFFFD700),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = movie.title,
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
+        )
     }
 }
 
-// --- PREVIEW ---
-@Preview(showBackground = true, widthDp = 412, heightDp = 800)
+@Preview(showBackground = true, widthDp = 412, heightDp = 850)
 @Composable
 fun MainAppPreview() {
     MainAppScreen()
