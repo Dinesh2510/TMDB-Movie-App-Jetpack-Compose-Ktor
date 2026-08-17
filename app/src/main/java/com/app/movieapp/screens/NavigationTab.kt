@@ -1,6 +1,5 @@
 package com.app.movieapp.screens
 
-import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -69,7 +68,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 
-// Sealed class containing only the bottom bar tabs
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Filled.Home)
     object Movies : Screen("movies", "Movies", Icons.Filled.Movie)
@@ -88,9 +86,14 @@ fun FloatingAirNavigationBar(
         listOf(Screen.Home, Screen.Movies, Screen.Favorites, Screen.Profile)
     }
 
-    // Glass style setup
-    val glassBgColor = Color.White.copy(alpha = 0.22f)
-    val glassBorderColor = Color.White.copy(alpha = 0.40f)
+    // Semi-transparent liquid glass backdrop & border
+    val glassBgColor = Color.White.copy(alpha = 0.30f)
+    val glassBorderGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.65f), // Top light refraction
+            Color.White.copy(alpha = 0.15f)  // Bottom soft edge
+        )
+    )
 
     val activeGradient = Brush.horizontalGradient(
         colors = listOf(
@@ -110,76 +113,87 @@ fun FloatingAirNavigationBar(
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Main Liquid Glass Floating Pill Container
-        Row(
+        // Main Floating Glass Pill Container
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .height(64.dp)
-                .shadow(
-                    elevation = 16.dp,
-                    shape = CircleShape,
-                    ambientColor = Color.Black.copy(alpha = 0.2f),
-                    spotColor = Color.Black.copy(alpha = 0.3f)
-                )
-                .clip(CircleShape)
-                .border(1.dp, glassBorderColor, CircleShape)
-                .background(glassBgColor),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            tabs.forEach { screen ->
-                val isSelected = currentRoute == screen.route
+            // LAYER 1: Translucent Glass Background & Shadow (No blur applied to icons!)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .shadow(
+                        elevation = 16.dp,
+                        shape = CircleShape,
+                        ambientColor = Color.Black.copy(alpha = 0.25f),
+                        spotColor = Color.Black.copy(alpha = 0.35f)
+                    )
+                    .clip(CircleShape)
+                    .border(1.5.dp, glassBorderGradient, CircleShape)
+                    .background(glassBgColor)
+            )
 
-                val animatedContentColor by animateColorAsState(
-                    targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.75f),
-                    animationSpec = tween(durationMillis = 250),
-                    label = "tabContent"
-                )
+            // LAYER 2: Crisp Content Layer (Icons, Text & Selected Pill)
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                tabs.forEach { screen ->
+                    val isSelected = currentRoute == screen.route
 
-                val scale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.05f else 1.0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    ),
-                    label = "tabScale"
-                )
+                    val animatedContentColor by animateColorAsState(
+                        targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.75f),
+                        animationSpec = tween(durationMillis = 250),
+                        label = "tabContent"
+                    )
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .padding(4.dp)
-                        .clip(CircleShape)
-                        .then(
-                            if (isSelected) Modifier.background(activeGradient)
-                            else Modifier
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onTabSelected(screen) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier.scale(scale),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                    val scale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.05f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "tabScale"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(4.dp)
+                            .clip(CircleShape)
+                            .then(
+                                if (isSelected) Modifier.background(activeGradient)
+                                else Modifier
+                            )
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onTabSelected(screen) },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = screen.icon,
-                            contentDescription = screen.title,
-                            tint = animatedContentColor,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = screen.title,
-                            color = animatedContentColor,
-                            fontSize = 10.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            maxLines = 1
-                        )
+                        Column(
+                            modifier = Modifier.scale(scale),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = screen.icon,
+                                contentDescription = screen.title,
+                                tint = animatedContentColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = screen.title,
+                                color = animatedContentColor,
+                                fontSize = 10.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -187,18 +201,18 @@ fun FloatingAirNavigationBar(
 
         Spacer(modifier = Modifier.width(10.dp))
 
-        // Standalone Liquid Glass Search FAB
+        // Right Circular Search FAB
         Box(
             modifier = Modifier
                 .size(64.dp)
                 .shadow(
                     elevation = 16.dp,
                     shape = CircleShape,
-                    ambientColor = Color.Black.copy(alpha = 0.2f),
-                    spotColor = Color.Black.copy(alpha = 0.3f)
+                    ambientColor = Color.Black.copy(alpha = 0.25f),
+                    spotColor = Color.Black.copy(alpha = 0.35f)
                 )
                 .clip(CircleShape)
-                .border(1.dp, glassBorderColor, CircleShape)
+                .border(1.5.dp, glassBorderGradient, CircleShape)
                 .background(glassBgColor)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -225,7 +239,7 @@ fun MainAppScreen() {
 
     Scaffold(
         containerColor = Color.Transparent,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0), // Prevents Scaffold inset calculation
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             FloatingAirNavigationBar(
                 currentRoute = currentRoute,
@@ -238,14 +252,10 @@ fun MainAppScreen() {
                         restoreState = true
                     }
                 },
-                onSearchClicked = {
-                    // Option A: Launch a standalone Search Activity directly
-                    // context.startActivity(Intent(context, SearchActivity::class.java))
-                }
+                onSearchClicked = { }
             )
         }
     ) { _ ->
-        // Note: innerPadding intentionally omitted from NavHost so full gradient bleeds behind bottom bar
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
@@ -259,7 +269,6 @@ fun MainAppScreen() {
     }
 }
 
-// Item Data Model
 data class MovieItem(
     val id: Int,
     val title: String,
@@ -303,7 +312,7 @@ fun ScreenContent(categoryName: String) {
                     top = 48.dp,
                     start = 16.dp,
                     end = 16.dp,
-                    bottom = 120.dp // Clear bottom bar overlap so last items stay visible
+                    bottom = 120.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -384,4 +393,3 @@ fun MovieListItemCard(item: MovieItem) {
 fun FloatingAirNavigationBarPreview() {
     MainAppScreen()
 }
-
