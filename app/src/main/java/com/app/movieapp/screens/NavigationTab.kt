@@ -68,6 +68,43 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 
+// --- DESIGN SYSTEM & THEME ---
+// Defining specific cosmic dark, glass, and accent colors for maximum pop.
+object CinematicTheme {
+    // Screen background (matched to deep indigos in the reference)
+    val ScreenBgGradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFF0F0E17), Color(0xFF161522), Color(0xFF0F0E17))
+    )
+
+    // Main Dark Glass Surface for Navigation (High Contrast with white content)
+    val NavigationSurface = Color(0xFF181726).copy(alpha = 0.85f) // Dark indigo-grey, semi-translucent
+
+    // Liquid Glass Edges/Refraction Border
+    val GlassBorderGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.50f), // Top light highlight
+            Color.White.copy(alpha = 0.15f)  // Bottom soft fade
+        )
+    )
+
+    // Active Selection Accent (Vibrant Coral/Orange Gradient Pill)
+    val ActiveGradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFFEA5B43), Color(0xFFFF7A00))
+    )
+
+    // Foreground Text & Icons
+    val TextPrimary = Color.White
+    val TextSecondary = Color.White.copy(alpha = 0.70f)
+}
+
+// --- DATA MODELS ---
+data class MovieItem(
+    val id: Int,
+    val title: String,
+    val subtitle: String,
+    val imageUrl: String
+)
+
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Filled.Home)
     object Movies : Screen("movies", "Movies", Icons.Filled.Movie)
@@ -75,6 +112,8 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Profile : Screen("profile", "Profile", Icons.Filled.Person)
 }
 
+// --- UPDATED BOTTOM NAVIGATION BAR ---
+// Strictly separates navigation pill from Search FAB with specific dark glass styling.
 @Composable
 fun FloatingAirNavigationBar(
     currentRoute: String?,
@@ -86,22 +125,6 @@ fun FloatingAirNavigationBar(
         listOf(Screen.Home, Screen.Movies, Screen.Favorites, Screen.Profile)
     }
 
-    // Semi-transparent liquid glass backdrop & border
-    val glassBgColor = Color.White.copy(alpha = 0.30f)
-    val glassBorderGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.65f), // Top light refraction
-            Color.White.copy(alpha = 0.15f)  // Bottom soft edge
-        )
-    )
-
-    val activeGradient = Brush.horizontalGradient(
-        colors = listOf(
-            Color(0xFFEA5B43),
-            Color(0xFFF47C62)
-        )
-    )
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -109,32 +132,27 @@ fun FloatingAirNavigationBar(
                 start = 16.dp,
                 end = 16.dp,
                 top = 12.dp,
+                // Pushes the bar up to float correctly over device gesture bars.
                 bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             ),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        // Main Floating Glass Pill Container
+        // LAYER 1: Main Dark Glass Navigation Pill (High Contrast Surface)
         Box(
             modifier = Modifier
+                .height(68.dp)
                 .weight(1f)
-                .height(64.dp)
+                .shadow(
+                    elevation = 16.dp,
+                    shape = CircleShape,
+                    ambientColor = Color.Black.copy(alpha = 0.3f),
+                    spotColor = Color.Black.copy(alpha = 0.4f)
+                )
+                .clip(CircleShape)
+                .border(1.5.dp, CinematicTheme.GlassBorderGradient, CircleShape)
+                .background(CinematicTheme.NavigationSurface)
         ) {
-            // LAYER 1: Translucent Glass Background & Shadow (No blur applied to icons!)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .shadow(
-                        elevation = 16.dp,
-                        shape = CircleShape,
-                        ambientColor = Color.Black.copy(alpha = 0.25f),
-                        spotColor = Color.Black.copy(alpha = 0.35f)
-                    )
-                    .clip(CircleShape)
-                    .border(1.5.dp, glassBorderGradient, CircleShape)
-                    .background(glassBgColor)
-            )
-
-            // LAYER 2: Crisp Content Layer (Icons, Text & Selected Pill)
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -143,14 +161,16 @@ fun FloatingAirNavigationBar(
                 tabs.forEach { screen ->
                     val isSelected = currentRoute == screen.route
 
+                    // Content color transitions (White on Dark Glass)
                     val animatedContentColor by animateColorAsState(
-                        targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.75f),
+                        targetValue = if (isSelected) CinematicTheme.TextPrimary else CinematicTheme.TextSecondary,
                         animationSpec = tween(durationMillis = 250),
                         label = "tabContent"
                     )
 
+                    // Spring scale animation for selected icon/text Column
                     val scale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.05f else 1.0f,
+                        targetValue = if (isSelected) 1.08f else 1.0f,
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioMediumBouncy,
                             stiffness = Spring.StiffnessLow
@@ -165,7 +185,8 @@ fun FloatingAirNavigationBar(
                             .padding(4.dp)
                             .clip(CircleShape)
                             .then(
-                                if (isSelected) Modifier.background(activeGradient)
+                                // LAYER 2: SELECTED ACCENT (Coral Gradient Pill)
+                                if (isSelected) Modifier.background(CinematicTheme.ActiveGradient)
                                 else Modifier
                             )
                             .clickable(
@@ -183,7 +204,7 @@ fun FloatingAirNavigationBar(
                                 imageVector = screen.icon,
                                 contentDescription = screen.title,
                                 tint = animatedContentColor,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
@@ -199,21 +220,21 @@ fun FloatingAirNavigationBar(
             }
         }
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
-        // Right Circular Search FAB
+        // LAYER 3: Standalone Right Circular Search FAB (Matching Dark Glass surface)
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(68.dp)
                 .shadow(
                     elevation = 16.dp,
                     shape = CircleShape,
-                    ambientColor = Color.Black.copy(alpha = 0.25f),
-                    spotColor = Color.Black.copy(alpha = 0.35f)
+                    ambientColor = Color.Black.copy(alpha = 0.3f),
+                    spotColor = Color.Black.copy(alpha = 0.4f)
                 )
                 .clip(CircleShape)
-                .border(1.5.dp, glassBorderGradient, CircleShape)
-                .background(glassBgColor)
+                .border(1.5.dp, CinematicTheme.GlassBorderGradient, CircleShape)
+                .background(CinematicTheme.NavigationSurface)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -224,21 +245,22 @@ fun FloatingAirNavigationBar(
                 imageVector = Icons.Filled.Search,
                 contentDescription = "Search",
                 tint = Color.White,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             )
         }
     }
 }
 
+// --- MAIN CONTAINER ---
 @Composable
 fun MainAppScreen() {
-    val context = LocalContext.current
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
         containerColor = Color.Transparent,
+        // Disables standard Scaffold padding calculation so full gradient bleeds correctly.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             FloatingAirNavigationBar(
@@ -252,13 +274,14 @@ fun MainAppScreen() {
                         restoreState = true
                     }
                 },
-                onSearchClicked = { }
+                onSearchClicked = { /* Handle search Activity launch here */ }
             )
         }
     ) { _ ->
+        // Note: innerPadding intentionally omitted from NavHost for cinematic background flow.
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = Screen.Movies.route, // Highlighting 'Movies' active tab
             modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.Home.route) { ScreenContent("Home Screen") }
@@ -269,22 +292,17 @@ fun MainAppScreen() {
     }
 }
 
-data class MovieItem(
-    val id: Int,
-    val title: String,
-    val subtitle: String,
-    val imageUrl: String
-)
-
+// --- SCREEN CONTENT (Scrollable Feed) ---
 @Composable
-fun ScreenContent(categoryName: String) {
-    val itemsList = remember(categoryName) {
+fun ScreenContent(title: String) {
+    // Generate 50 items for the feed
+    val itemsList = remember(title) {
         List(50) { index ->
             MovieItem(
                 id = index + 1,
-                title = "$categoryName Item #${index + 1}",
+                title = "$title Item #${index + 1}",
                 subtitle = "Action, Drama, Sci-Fi • 2026",
-                imageUrl = "https://picsum.photos/seed/${categoryName}_${index + 1}/200/300"
+                imageUrl = "https://picsum.photos/seed/${title}_${index + 1}/200/300"
             )
         }
     }
@@ -292,19 +310,12 @@ fun ScreenContent(categoryName: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF1F1C2C),
-                        Color(0xFF928DAB)
-                    )
-                )
-            )
+            .background(CinematicTheme.ScreenBgGradient)
     ) {
         AnimatedContent(
             targetState = itemsList,
             transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
-            label = "listTransition"
+            label = "screenTransition"
         ) { targetList ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -312,13 +323,14 @@ fun ScreenContent(categoryName: String) {
                     top = 48.dp,
                     start = 16.dp,
                     end = 16.dp,
+                    // Clearance to ensure last items scroll above the floating bottom bar.
                     bottom = 120.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item {
                     Text(
-                        text = "$categoryName Collection",
+                        text = "$title Collection",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -342,6 +354,7 @@ fun MovieListItemCard(item: MovieItem) {
             .height(90.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
+            // Translucent dark glass card surface
             containerColor = Color.White.copy(alpha = 0.15f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -388,8 +401,9 @@ fun MovieListItemCard(item: MovieItem) {
     }
 }
 
+// --- PREVIEW ---
 @Preview(showBackground = true, widthDp = 412, heightDp = 800)
 @Composable
-fun FloatingAirNavigationBarPreview() {
+fun MainAppPreview() {
     MainAppScreen()
 }
