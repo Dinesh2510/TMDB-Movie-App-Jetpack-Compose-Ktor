@@ -208,7 +208,7 @@ fun FloatingAirNavigationBar(
                                 tint = animatedContentColor,
                                 modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            // Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = screen.title,
                                 color = animatedContentColor,
@@ -281,10 +281,10 @@ fun MainAppScreen() {
     ) { _ ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Movies.route,
+            startDestination = Screen.Home.route,
             modifier = Modifier.fillMaxSize()
         ) {
-            composable(Screen.Home.route) { MovieGridScreen("Trending on TMDB") }
+            composable(Screen.Home.route) { TmdbHomeScreen() }
             composable(Screen.Movies.route) { MovieGridScreen("Movies") }
             composable(Screen.Saved.route) { MovieGridScreen("Saved Watchlist") }
             composable(Screen.Profile.route) { MovieGridScreen("User Profile") }
