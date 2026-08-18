@@ -73,29 +73,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
-
-// --- THEME DEFINITION ---
-object FrostedGlassTheme {
-    val ScreenBgGradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFF0D0C14), Color(0xFF151322), Color(0xFF0D0C14))
-    )
-
-    // Liquid Glass Translucent Surface
-    val GlassSurfaceColor = Color(0xFF1E1B2E).copy(alpha = 0.55f)
-
-    // Glass Refraction Border (Top edge highlight fading down)
-    val GlassBorderGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.45f),
-            Color.White.copy(alpha = 0.08f)
-        )
-    )
-
-    // Active Tab Gradient Pill (Vibrant Coral/Orange)
-    val ActiveGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFFFF5252), Color(0xFFFF7A00))
-    )
-}
+import com.app.movieapp.ui.theme.FrostedGlassTheme
 
 // --- DATA MODELS & ROUTES ---
 data class TmdbMovie(

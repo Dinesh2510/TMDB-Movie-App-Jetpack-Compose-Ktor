@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.app.movieapp.screens.GenreWiseMoviesScreen
+import com.app.movieapp.screens.MainAppScreen
 import com.app.movieapp.screens.MovieDetailsScreen
 import com.app.movieapp.screens.MovieHomeScreen
 import com.app.movieapp.screens.SavedMovieScreen
@@ -33,7 +34,7 @@ fun RootNavigation() {
             SplashScreen(navController = navController)
         }
         composable(route = MovieAppScreen.MOVIE_HOME.route) {
-            MovieHomeScreen(navController = navController)
+            MainAppScreen()
         }
         composable(
             route = MovieAppScreen.MOVIE_HOME_DETAILS.route + "/{$MOVIE_ID_ARG}",

@@ -70,6 +70,31 @@ val seed = Color(0xFF0C1B3A)
 
 
 
+// --- THEME DEFINITION ---
+object FrostedGlassTheme {
+    val ScreenBgGradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFF0D0C14), Color(0xFF151322), Color(0xFF0D0C14))
+    )
+
+    // Liquid Glass Translucent Surface
+    val GlassSurfaceColor = Color(0xFF1E1B2E).copy(alpha = 0.55f)
+
+    // Glass Refraction Border (Top edge highlight fading down)
+    val GlassBorderGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.45f),
+            Color.White.copy(alpha = 0.08f)
+        )
+    )
+
+    // Active Tab Gradient Pill (Vibrant Coral/Orange)
+    val ActiveGradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFFFF5252), Color(0xFFFF7A00))
+    )
+    // Continuous Cosmic Background Gradient (Top Indigo -> Mid Purple -> Deep OLED Black)
+
+}
+
 object TmdbTheme {
     // --- Cinematic Neutral & Background Colors ---
     // Deep cosmic colors for OLED-friendly dark mode. These deep indigos
@@ -123,4 +148,12 @@ object TmdbTheme {
 
     // Star Rating Gold
     val RatingGold = Color(0xFFFFD700)
+
+    val AppBackgroundGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF0F0E17), // Deep cosmic indigo top
+            Color(0xFF161522), // Subtle purple/grey center blend
+            Color(0xFF0A0910)  // Deep OLED black at bottom
+        )
+    )
 }

@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -49,7 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.app.movieapp.ui.theme.TmdbTheme
+import androidx.compose.runtime.LaunchedEffect
 
+import kotlinx.coroutines.delay
 // Dummy Data Models tailored for the detailed Homepage
 data class FeaturedMovie(val id: Int, val title: String, val genreText: String, val rating: String, val backdropUrl: String)
 data class PosterMovie(val id: Int, val title: String, val rating: String, val date: String, val posterUrl: String)
@@ -62,12 +67,11 @@ fun TmdbHomeScreen() {
 
     val heroMovies = remember {
         listOf(
-            FeaturedMovie(1, "Dune: Part Two", "Sci-Fi • 2h 46m", "★ 8.8", "https://picsum.photos/seed/dune/600/350"),
-            FeaturedMovie(2, "Oppenheimer", "Biography • 3h 00m", "★ 8.6", "https://picsum.photos/seed/oppen/600/350"),
-            FeaturedMovie(3, "The Batman", "Action • 2h 56m", "★ 8.3", "https://picsum.photos/seed/batman/600/350")
+            FeaturedMovie(1, "Dune: Part Two", "Sci-Fi • 2h 46m", "8.8", "https://picsum.photos/seed/dune/600/350"),
+            FeaturedMovie(2, "Oppenheimer", "Biography • 3h 00m", "8.6", "https://picsum.photos/seed/oppen/600/350"),
+            FeaturedMovie(3, "The Batman", "Action • 2h 56m", "8.3", "https://picsum.photos/seed/batman/600/350")
         )
     }
-
     val theaterMovies = remember {
         List(8) { index ->
             PosterMovie(
@@ -108,7 +112,7 @@ fun TmdbHomeScreen() {
 
             // 2. Hero Trending Banner Pager
             item {
-                HeroTrendingPager(movies = heroMovies)
+                AutoSliderHeroPager(movies = heroMovies)
             }
 
             // 3. Genre Quick-Filter Chips
@@ -155,6 +159,7 @@ fun HomeHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+//            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
             .padding(horizontal = 16.dp, vertical = 20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -195,6 +200,103 @@ fun HomeHeader() {
 @Composable
 fun HeroTrendingPager(movies: List<FeaturedMovie>) {
     val pagerState = rememberPagerState(pageCount = { movies.size })
+
+    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            pageSpacing = 12.dp
+        ) { page ->
+            val movie = movies[page]
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AsyncImage(
+                        model = movie.backdropUrl,
+                        contentDescription = movie.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    // Cinematic Overlay (Dark gradient from bottom up)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.85f)
+                                    )
+                                )
+                            )
+                    )
+
+                    // Hero Text & FAB
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = movie.title,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${movie.genreText} • ${movie.rating}",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        // Neon Play FAB
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(TmdbTheme.PrimaryGradient),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = "Play Trailer",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun AutoSliderHeroPager(movies: List<FeaturedMovie>) {
+    val pagerState = rememberPagerState(pageCount = { movies.size })
+
+    // AUTO-SLIDER LOGIC
+    // Automatically advances pages in a continuous loop when movies list is not empty
+    LaunchedEffect(key1 = movies, key2 = pagerState.isScrollInProgress) {
+        if (movies.isNotEmpty() && !pagerState.isScrollInProgress) {
+            while (true) {
+                delay(1500) // Delay per slide in milliseconds (3.5s)
+                val nextPage = (pagerState.currentPage + 1) % movies.size
+                pagerState.animateScrollToPage(nextPage)
+            }
+        }
+    }
 
     Column(modifier = Modifier.padding(vertical = 12.dp)) {
         HorizontalPager(
