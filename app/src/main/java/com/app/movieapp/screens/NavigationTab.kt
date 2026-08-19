@@ -1,15 +1,10 @@
 package com.app.movieapp.screens
 
-import android.os.Build
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -42,7 +37,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -56,11 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect
-import androidx.compose.ui.graphics.Shader
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -68,11 +58,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
+import com.app.movieapp.graph.Graph
+import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.ui.theme.FrostedGlassTheme
 
 // --- DATA MODELS & ROUTES ---
@@ -186,7 +179,6 @@ fun FloatingAirNavigationBar(
                                 tint = animatedContentColor,
                                 modifier = Modifier.size(22.dp)
                             )
-                            // Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = screen.title,
                                 color = animatedContentColor,
@@ -233,9 +225,11 @@ fun FloatingAirNavigationBar(
 
 // --- MAIN CONTAINER ---
 @Composable
-fun MainAppScreen() {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
+fun MainAppScreen(
+    rootNavController: NavHostController // Attached to RootNavigation graph
+) {
+    val bottomNavController = rememberNavController() // Inner bottom tab graph
+    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
@@ -245,32 +239,58 @@ fun MainAppScreen() {
             FloatingAirNavigationBar(
                 currentRoute = currentRoute,
                 onTabSelected = { screen ->
-                    navController.navigate(screen.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
+                    bottomNavController.navigate(screen.route) {
+                        popUpTo(bottomNavController.graph.findStartDestination().id) {
                             saveState = true
                         }
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
-                onSearchClicked = { }
+                onSearchClicked = {
+                    // Navigates using rootNavController (No IllegalArgumentException!)
+                    rootNavController.navigate(MovieAppScreen.MOVIE_SEARCH.route)
+                }
             )
         }
     ) { _ ->
         NavHost(
-            navController = navController,
+            navController = bottomNavController,
             startDestination = Screen.Home.route,
             modifier = Modifier.fillMaxSize()
         ) {
-            composable(Screen.Home.route) { TmdbHomeScreen() }
-            composable(Screen.Movies.route) { MovieGridScreen("Movies") }
-            composable(Screen.Saved.route) { MovieGridScreen("Saved Watchlist") }
-            composable(Screen.Profile.route) { MovieGridScreen("User Profile") }
+            composable(Screen.Home.route) {
+                TmdbHomeScreen()
+            }
+            composable(Screen.Movies.route) {
+                MovieGridScreen("Movies")
+            }
+            composable(Screen.Saved.route) {
+                SavedMovieScreen(navController = rootNavController)
+            }
+            composable(Screen.Profile.route) {
+                ProfileScreen(
+                    onWatchlistClick = {
+                        bottomNavController.navigate(Screen.Saved.route) {
+                            popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onLogoutClick = {
+                        rootNavController.navigate(MovieAppScreen.ONBOARDING.route) {
+                            popUpTo(Graph.ROOT) { inclusive = true }
+                        }
+                    }
+                )
+            }
         }
     }
 }
 
-// --- MOVIE GRID SCREEN (Matches mockup posters) ---
+// --- MOVIE GRID SCREEN ---
 @Composable
 fun MovieGridScreen(title: String) {
     val moviesList = remember(title) {
@@ -374,5 +394,5 @@ fun MovieGridCard(movie: TmdbMovie) {
 @Preview(showBackground = true, widthDp = 412, heightDp = 850)
 @Composable
 fun MainAppPreview() {
-    MainAppScreen()
+    MainAppScreen(rememberNavController())
 }

@@ -156,4 +156,30 @@ object TmdbTheme {
             Color(0xFF0A0910)  // Deep OLED black at bottom
         )
     )
+
+
+}
+object TmdbCinematicTheme {
+    // Continuous Cosmic Background Gradient (Top Indigo -> Mid Purple -> Deep OLED Black)
+    val AppBackgroundGradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFF0F0E17), Color(0xFF161522), Color(0xFF0A0910))
+    )
+
+    // Liquid Glass Container Styling
+    val GlassSurface = Color(0xFF1B192B).copy(alpha = 0.65f)
+    val GlassBorderGradient = Brush.verticalGradient(
+        colors = listOf(Color.White.copy(alpha = 0.40f), Color.White.copy(alpha = 0.08f))
+    )
+
+    // Dynamic Action Accent (Used only for the animating Name now)
+    val AccentCoral = Color(0xFFFF5252)
+
+    // Cinematic Text Colors
+    val TextPrimary = Color(0xFFFFFFFF)
+    val TextSecondary = Color(0xFFA7A7B7)
+
+    val CoralAccent = Color(0xFFFF5252)
+    val PrimaryActionGradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFFFF5252), Color(0xFFFF7A00))
+    )
 }

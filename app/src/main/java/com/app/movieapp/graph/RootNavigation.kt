@@ -2,6 +2,8 @@ package com.app.movieapp.graph
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,37 +12,116 @@ import androidx.navigation.navArgument
 import com.app.movieapp.screens.GenreWiseMoviesScreen
 import com.app.movieapp.screens.MainAppScreen
 import com.app.movieapp.screens.MovieDetailsScreen
-import com.app.movieapp.screens.MovieHomeScreen
 import com.app.movieapp.screens.SavedMovieScreen
 import com.app.movieapp.screens.ScreenAbout
 import com.app.movieapp.screens.SearchScreen
 import com.app.movieapp.screens.SeeAllScreen
 import com.app.movieapp.screens.SplashScreen
 
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.app.movieapp.data.viewmodel.AuthViewModel
+import com.app.movieapp.screens.GenreWiseMoviesScreen
+import com.app.movieapp.screens.LoginScreen
+import com.app.movieapp.screens.MainAppScreen
+import com.app.movieapp.screens.MovieDetailsScreen
+import com.app.movieapp.screens.OnboardingScreen
+import com.app.movieapp.screens.ProfileScreen
+import com.app.movieapp.screens.RegisterScreen
+import com.app.movieapp.screens.SavedMovieScreen
+import com.app.movieapp.screens.ScreenAbout
+import com.app.movieapp.screens.SearchScreen
+import com.app.movieapp.screens.SeeAllScreen
+import com.app.movieapp.screens.SplashScreen
+import org.koin.androidx.compose.koinViewModel
+
 @Composable
-fun RootNavigation() {
+fun RootNavigation(
+    authViewModel: AuthViewModel = koinViewModel()
+) {
     val navController = rememberNavController()
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val isOnboardingCompleted by authViewModel.isOnboardingCompleted.collectAsState()
+
     val MOVIE_ID_ARG = "movieId"
     val SeeAllTags = "seeAllTags"
     val genreId = "genId"
     val genreName = "genName"
+
     NavHost(
         navController = navController,
         route = Graph.ROOT,
         startDestination = MovieAppScreen.SPLASH.route
     ) {
-
         composable(route = MovieAppScreen.SPLASH.route) {
-            SplashScreen(navController = navController)
+            SplashScreen({
+                val targetRoute = when {
+
+                    isLoggedIn -> MovieAppScreen.MOVIE_HOME.route
+
+                    isOnboardingCompleted -> MovieAppScreen.LOGIN.route
+
+                    else -> MovieAppScreen.ONBOARDING.route
+
+                }
+
+                navController.navigate(targetRoute) {
+
+                    popUpTo(MovieAppScreen.SPLASH.route) { inclusive = true }
+
+                }
+            })
         }
-        composable(route = MovieAppScreen.MOVIE_HOME.route) {
-            MainAppScreen()
+
+        composable(route = MovieAppScreen.ONBOARDING.route) {
+            OnboardingScreen(
+                onCreateAccountClick = {
+                    navController.navigate(MovieAppScreen.REGISTER.route)
+                },
+                onLoginClick = {
+                    navController.navigate(MovieAppScreen.LOGIN.route)
+                }
+            )
         }
+
+        composable(route = MovieAppScreen.REGISTER.route) {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate(MovieAppScreen.MOVIE_HOME.route) {
+                        popUpTo(MovieAppScreen.ONBOARDING.route) { inclusive = true }
+                    }
+                },
+                onLoginClick = {
+                    navController.navigate(MovieAppScreen.LOGIN.route) {
+                        popUpTo(MovieAppScreen.REGISTER.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(route = MovieAppScreen.LOGIN.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(MovieAppScreen.MOVIE_HOME.route) {
+                        popUpTo(MovieAppScreen.ONBOARDING.route) { inclusive = true }
+                    }
+                },
+                onRegisterClick = {
+                    navController.navigate(MovieAppScreen.REGISTER.route) {
+                        popUpTo(MovieAppScreen.LOGIN.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+
+
         composable(
             route = MovieAppScreen.MOVIE_HOME_DETAILS.route + "/{$MOVIE_ID_ARG}",
             arguments = listOf(navArgument(MOVIE_ID_ARG) { type = NavType.StringType })
         ) {
-            Log.e("TAG_PASSED_KEY", "RootNavigation: " + it.arguments?.getString(MOVIE_ID_ARG))
             MovieDetailsScreen(navController, it.arguments?.getString(MOVIE_ID_ARG) ?: "1")
         }
 
@@ -48,12 +129,11 @@ fun RootNavigation() {
             route = MovieAppScreen.MOVIE_SEE_ALL.route + "/{$SeeAllTags}",
             arguments = listOf(navArgument(SeeAllTags) { type = NavType.StringType })
         ) {
-            Log.e("TAG_PASSED_KEY_all", "RootNavigation: " + it.arguments?.getString(SeeAllTags))
             SeeAllScreen(it.arguments?.getString(SeeAllTags) ?: "1", navController)
         }
 
         composable(
-            route = MovieAppScreen.MOVIE_GENRE_WISE.route + "/{$genreId}" + "/{$genreName}",
+            route = MovieAppScreen.MOVIE_GENRE_WISE.route + "/{$genreId}/{$genreName}",
             arguments = listOf(
                 navArgument(genreId) { type = NavType.StringType },
                 navArgument(genreName) { type = NavType.StringType }
@@ -69,8 +149,14 @@ fun RootNavigation() {
         composable(route = MovieAppScreen.MOVIE_SEARCH.route) {
             SearchScreen(navController = navController)
         }
+
         composable(route = MovieAppScreen.MOVIE_WATCHLIST.route) {
             SavedMovieScreen(navController = navController)
+        }
+// Inside RootNavigation.kt
+        composable(route = MovieAppScreen.MOVIE_HOME.route) {
+            // Pass the root navController here!
+            MainAppScreen(rootNavController = navController)
         }
         composable(route = MovieAppScreen.MOVIE_ABOUT.route) {
             ScreenAbout()
@@ -78,13 +164,11 @@ fun RootNavigation() {
     }
 }
 
-object Graph {
-    const val ROOT = "root_graph"
-}
-
-
 sealed class MovieAppScreen(val route: String) {
     object SPLASH : MovieAppScreen(route = "splash")
+    object ONBOARDING : MovieAppScreen(route = "onboarding")
+    object LOGIN : MovieAppScreen(route = "login")
+    object REGISTER : MovieAppScreen(route = "register")
     object MOVIE_HOME : MovieAppScreen(route = "home")
     object MOVIE_HOME_DETAILS : MovieAppScreen(route = "homeDetails")
     object MOVIE_SEE_ALL : MovieAppScreen(route = "seeAll")
@@ -92,4 +176,8 @@ sealed class MovieAppScreen(val route: String) {
     object MOVIE_SEARCH : MovieAppScreen(route = "search")
     object MOVIE_ABOUT : MovieAppScreen(route = "about")
     object MOVIE_WATCHLIST : MovieAppScreen(route = "watch")
+}
+
+object Graph {
+    const val ROOT = "root_graph"
 }

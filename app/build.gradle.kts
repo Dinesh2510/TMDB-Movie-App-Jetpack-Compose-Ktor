@@ -117,6 +117,11 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+// Preferences DataStore (SharedPreferences like APIs)
+    implementation(libs.androidx.datastore.preferences)
+// Alternatively - without an Android dependency.
+    implementation(libs.androidx.datastore.preferences.core)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)

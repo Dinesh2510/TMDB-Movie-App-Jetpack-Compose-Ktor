@@ -1,5 +1,13 @@
 package com.app.movieapp.di
 
+import com.app.movieapp.data.local.UserPreferences
+import com.app.movieapp.data.local.dataStore
+import com.app.movieapp.data.viewmodel.AuthViewModel
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.module
+
 /*
  * Project: TMDB Compose
  * Package: com.app.movieapp.di
@@ -22,9 +30,22 @@ package com.app.movieapp.di
  * limitations under the License.
  */
 
+// Preference & Auth Module Definition
+val preferencesModule = module {
+    // Provide DataStore Instance
+    single { androidContext().dataStore }
+
+    // Provide UserPreferences Repository
+    single { UserPreferences(get()) }
+
+    // Provide AuthViewModel
+    viewModelOf(::AuthViewModel)}
+
+// Complete App Modules List
 val appModules = listOf(
     networkModule,     // Ktor 3.x HttpClient & ApiService
     databaseModule,    // Room Database & DAOs
     repositoryModule,  // Repositories (Home, MovieDetails, Search, MyList)
-    viewModelModule    // ViewModels (Home, MovieDetails, Search, WatchList)
+    viewModelModule,   // ViewModels (Home, MovieDetails, Search, WatchList)
+    preferencesModule  // DataStore & AuthViewModel
 )
