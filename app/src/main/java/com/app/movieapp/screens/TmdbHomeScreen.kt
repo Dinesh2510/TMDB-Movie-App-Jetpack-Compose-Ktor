@@ -33,14 +33,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,261 +50,268 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.app.movieapp.ui.theme.TmdbTheme
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.TextStyle
+import com.app.movieapp.data.viewmodel.HomeFeedUIState
+import com.app.movieapp.data.viewmodel.HomeViewModel
+import com.app.movieapp.graph.MovieAppScreen
+import com.app.movieapp.models.Genre
+import com.app.movieapp.models.Movies
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
-import com.app.movieapp.ui.theme.TmdbTheme.AccentGradient
-
-import kotlinx.coroutines.delay
+import com.app.movieapp.utlis.CenteredCircularProgressIndicator
+import com.app.movieapp.utlis.Constants.Companion.BASE_BACKDROP_IMAGE_URL
+import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
+import com.app.movieapp.utlis.Constants.Companion.nowPlayingAllListScreen
+import com.app.movieapp.utlis.Constants.Companion.popularAllListScreen
+import com.app.movieapp.utlis.Constants.Companion.upcomingListScreen
+import org.koin.androidx.compose.koinViewModel
 import kotlin.random.Random
 
-// Dummy Data Models tailored for the detailed Homepage
-data class FeaturedMovie(val id: Int, val title: String, val genreText: String, val rating: String, val backdropUrl: String)
-data class PosterMovie(val id: Int, val title: String, val rating: String, val date: String, val posterUrl: String)
-data class DetailedMovieRow(val id: Int, val title: String, val rating: String, val desc: String, val posterUrl: String)
-
 @Composable
-fun TmdbHomeScreen() {
-    val categories = listOf("All", "Action", "Sci-Fi", "Comedy", "Horror", "Drama")
-    var selectedCategory by remember { mutableStateOf("Sci-Fi") }
-
-    val heroMovies = remember {
-        listOf(
-            FeaturedMovie(1, "Dune: Part Two", "Sci-Fi • 2h 46m", "8.8", "https://picsum.photos/seed/dune/600/350"),
-            FeaturedMovie(2, "Oppenheimer", "Biography • 3h 00m", "8.6", "https://picsum.photos/seed/oppen/600/350"),
-            FeaturedMovie(3, "The Batman", "Action • 2h 56m", "8.3", "https://picsum.photos/seed/batman/600/350")
-        )
-    }
-    val theaterMovies = remember {
-        List(8) { index ->
-            PosterMovie(
-                id = index + 1,
-                title = "Theater Film #$index",
-                rating = "★ 8.${8 - (index % 5)}",
-                date = "Apr 12, 2026",
-                posterUrl = "https://picsum.photos/seed/play_$index/200/300"
-            )
-        }
-    }
-
-    val trendingRows = remember {
-        List(20) { index ->
-            DetailedMovieRow(
-                id = index + 1,
-                title = "Interstellar",
-                rating = "★★★★★",
-                desc = "A journey beyond stars...",
-                posterUrl = "https://picsum.photos/seed/trend_$index/200/300"
-            )
-        }
-    }
+fun TmdbHomeScreen(
+    navController: NavController,
+    viewModel: HomeViewModel = koinViewModel()
+) {
+    val homeState by viewModel.homeFeedState.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TmdbTheme.BackgroundGradient)
+            .background(TmdbCinematicTheme.AppBackgroundGradient)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 120.dp) // Clearance for translucent bottom bar
-        ) {
-            // 1. Home Header (Top Bar)
-            item {
-                HomeHeader()
-            }
-
-            // 2. Hero Trending Banner Pager
-            item {
-                HeroTrendingPager(movies = heroMovies)
-            }
-
-            // 3. Genre Quick-Filter Chips
-            item {
-                // --- DUMMY DATA ---
-                val dummyTop10IndiaMovies = listOf(
-                    Top10IndiaMovie(
-                        id = 1,
-                        title = "Dune: Part Two",
-                        category = "Sci-Fi • Action",
-                        rating = "8.8",
-                        posterUrl = "https://picsum.photos/seed/dune_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 2,
-                        title = "Ikkis",
-                        category = "War • Drama",
-                        rating = "8.6",
-                        posterUrl = "https://picsum.photos/seed/ikkis_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 3,
-                        title = "The Dark Knight",
-                        category = "Action • Crime",
-                        rating = "9.0",
-                        posterUrl = "https://picsum.photos/seed/batman_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 4,
-                        title = "Awarapan 2",
-                        category = "Action • Romance",
-                        rating = "8.4",
-                        posterUrl = "https://picsum.photos/seed/awarapan_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 5,
-                        title = "Cocktail 2",
-                        category = "Romance • Comedy",
-                        rating = "8.1",
-                        posterUrl = "https://picsum.photos/seed/cocktail_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 6,
-                        title = "Spider-Man: No Way Home",
-                        category = "Action • Sci-Fi",
-                        rating = "8.3",
-                        posterUrl = "https://picsum.photos/seed/spiderman_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 7,
-                        title = "Vaazha II",
-                        category = "Comedy • Drama",
-                        rating = "8.5",
-                        posterUrl = "https://picsum.photos/seed/vaazha_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 8,
-                        title = "Interstellar",
-                        category = "Sci-Fi • Adventure",
-                        rating = "8.7",
-                        posterUrl = "https://picsum.photos/seed/interstellar_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 9,
-                        title = "The Godfather",
-                        category = "Crime • Drama",
-                        rating = "9.2",
-                        posterUrl = "https://picsum.photos/seed/godfather_poster/300/450"
-                    ),
-                    Top10IndiaMovie(
-                        id = 10,
-                        title = "Governor",
-                        category = "Political • Thriller",
-                        rating = "8.2",
-                        posterUrl = "https://picsum.photos/seed/governor_poster/300/450"
-                    )
-                )
-
-                // --- INTEGRATION EXAMPLE WITHIN A LAZYCOLUMN FEED ---
-                val top10Movies = remember { dummyTop10IndiaMovies }
-
-                ModernTop10IndiaSection(
-                    top10List = top10Movies,
-                    onMovieClick = { selectedMovie ->
-                        // Handle movie click navigation or detail open
-                        println("Selected Movie: ${selectedMovie.title}")
-                    }
-                )
-            }
-            item {
-
-                LandscapeMoviesSection(
-                    sectionTitle = "CONTINUE WATCHING",
-                    movies = dummyLandscapeMovies,
-                    onMovieClick = {}
-                )
-            }
-            item {
-                TmdbCategoryExploreSection()
-            }
-
-
-            // 4. "Now Playing in Theaters" Section (Poster Grid)
-            item {
-                SectionHeader(title = "Now Playing in Theaters")
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+        when (val state = homeState) {
+            is HomeFeedUIState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(theaterMovies) { movie ->
-                        MoviePosterGridCard(movie = movie)
+                    CenteredCircularProgressIndicator()
+                }
+            }
+            is HomeFeedUIState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = state.message,
+                            color = TmdbCinematicTheme.TextSecondary,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(TmdbCinematicTheme.PrimaryActionGradient)
+                                .clickable { viewModel.fetchAllHomeData() }
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text("Retry", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
+            is HomeFeedUIState.Success -> {
+                // 1. Hero Banner (Top Carousel) -> API: "discover/movie"
+                val discoverMovies = state.discoverMovies?.results ?: emptyList()
 
-            // 5. "Trending This Week" Section (Detailed Listings)
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
-                SectionHeader(title = "Trending This Week")
-            }
+// 2. TRENDING 10 Section -> API: "trending/all/week" (Strictly 10 items)
+                val trendingAllMovies = state.trendingAll?.results?.take(10) ?: emptyList()
 
-            items(trendingRows, key = { it.id }) { rowItem ->
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    MovieDetailedRowCard(item = rowItem)
+// 3. Now Playing in Theaters -> API: "movie/now_playing"
+                val nowPlayingMovies = state.nowPlayingMovies?.results ?: emptyList()
+
+// 4. Trending This Week -> API: "trending/movie/week"
+                val trendingMovies = state.trendingMovies?.results ?: emptyList()
+
+// 5. UPCOMING SPOTLIGHT -> API: "movie/upcoming"
+                val upcomingMovies = state.upcomingMovies?.results ?: emptyList()
+
+// 6. EXPLORE BY GENRE -> API: "genre/movie/list"
+                val genres = state.genres?.genres ?: emptyList()
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 120.dp)
+                ) {
+                    // 1. Home Header
+                    item {
+                        HomeHeader(
+                            onSearchClick = { navController.navigate(MovieAppScreen.MOVIE_SEARCH.route) }
+                        )
+                    }
+
+                    // 2. Hero Featured Movies Pager (From Discover API)
+                    if (discoverMovies.isNotEmpty()) {
+                        item {
+                            HeroTrendingPager(
+                                movies = discoverMovies.take(5),
+                                onMovieClick = { movieId ->
+                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$movieId")
+                                }
+                            )
+                        }
+                    }
+
+                    // 3. TRENDING 10 Section (From Trending All API)
+                    if (trendingAllMovies.isNotEmpty()) {
+                        item {
+                            ModernTop10Section(
+                                top10List = trendingAllMovies,
+                                onMovieClick = { movie ->
+                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                }
+                            )
+                        }
+                    }
+
+                    // 4. Continue Watching / Upcoming Spotlight
+                    if (upcomingMovies.isNotEmpty()) {
+                        item {
+                            LandscapeMoviesSection(
+                                sectionTitle = "UPCOMING SPOTLIGHT",
+                                movies = upcomingMovies.take(6),
+                                onSeeAllClick = {
+                                    navController.navigate("${MovieAppScreen.MOVIE_SEE_ALL.route}/$upcomingListScreen")
+                                },
+                                onMovieClick = { movie ->
+                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                }
+                            )
+                        }
+                    }
+
+                    // 5. Explore by Genre Section
+                    if (genres.isNotEmpty()) {
+                        item {
+                            TmdbCategoryExploreSection(
+                                genres = genres,
+                                onGenreClick = { genre ->
+                                    navController.navigate("${MovieAppScreen.MOVIE_GENRE_WISE.route}/${genre.id}/${genre.name}")
+                                }
+                            )
+                        }
+                    }
+
+                    // 6. "Now Playing in Theaters" Section (Poster Grid)
+                    if (nowPlayingMovies.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "Now Playing in Theaters",
+                                onSeeAllClick = {
+                                    navController.navigate("${MovieAppScreen.MOVIE_SEE_ALL.route}/$nowPlayingAllListScreen")
+                                }
+                            )
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                items(nowPlayingMovies, key = { it.id }) { movie ->
+                                    MoviePosterGridCard(
+                                        movie = movie,
+                                        onMovieClick = {
+                                            navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // 7. "Trending This Week" Section
+                    if (trendingMovies.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(20.dp))
+                            SectionHeader(
+                                title = "Trending This Week",
+                                onSeeAllClick = {
+                                    navController.navigate("${MovieAppScreen.MOVIE_SEE_ALL.route}/$popularAllListScreen")
+                                }
+                            )
+                        }
+
+                        itemsIndexed(trendingMovies, key = { index, movie -> "${movie.id}_$index" }) { _, movie ->
+                            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                                MovieDetailedRowCard(
+                                    item = movie,
+                                    onMovieClick = {
+                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-// --- Home Screen UI Components ---
-
+// --- Home Header ---
 @Composable
-fun HomeHeader() {
+fun HomeHeader(onSearchClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
-            .padding(horizontal = 16.dp),
+            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
             Text(
-                text = "Welcome Back, Alex 👋",
-                color = Color.White.copy(alpha = 0.6f),
+                text = "Welcome Back 👋",
+                color = TmdbCinematicTheme.TextSecondary,
                 fontSize = 12.sp
             )
             Text(
                 text = "Discover Movies",
-                color = Color.White,
+                color = TmdbCinematicTheme.TextPrimary,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        // Functional Filter/Tune Icon
-        Box(
+        IconButton(
+            onClick = onSearchClick,
             modifier = Modifier
-                .size(44.dp)
+                .size(42.dp)
                 .clip(CircleShape)
-                .background(TmdbTheme.GlassSurface)
-                .border(1.dp, TmdbTheme.GlassBorder, CircleShape),
-            contentAlignment = Alignment.Center
+                .background(TmdbCinematicTheme.GlassSurface)
+                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, CircleShape)
         ) {
             Icon(
-                imageVector = Icons.Filled.Tune,
-                contentDescription = "Filter",
-                tint = Color.White
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = TmdbCinematicTheme.TextPrimary,
+                modifier = Modifier.size(20.dp)
             )
         }
     }
 }
 
+// --- Hero Banner Pager ---
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HeroTrendingPager(movies: List<FeaturedMovie>) {
+fun HeroTrendingPager(
+    movies: List<Movies>,
+    onMovieClick: (Int) -> Unit
+) {
     val pagerState = rememberPagerState(pageCount = { movies.size })
 
     Column(modifier = Modifier.padding(vertical = 12.dp)) {
@@ -312,22 +321,24 @@ fun HeroTrendingPager(movies: List<FeaturedMovie>) {
             pageSpacing = 12.dp
         ) { page ->
             val movie = movies[page]
+            val backdropUrl = "$BASE_BACKDROP_IMAGE_URL${movie.backdropPath}"
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
+                    .height(200.dp)
+                    .clickable { onMovieClick(movie.id) },
                 shape = RoundedCornerShape(24.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
-                        model = movie.backdropUrl,
-                        contentDescription = movie.title,
+                        model = backdropUrl,
+                        contentDescription = movie.displayTitle,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
 
-                    // Cinematic Overlay (Dark gradient from bottom up)
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -341,7 +352,6 @@ fun HeroTrendingPager(movies: List<FeaturedMovie>) {
                             )
                     )
 
-                    // Hero Text & FAB
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -350,31 +360,32 @@ fun HeroTrendingPager(movies: List<FeaturedMovie>) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = movie.title,
+                                text = movie.displayTitle,
                                 color = Color.White,
                                 fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${movie.genreText} • ${movie.rating}",
+                                text = "Rating: ★ ${String.format("%.1f", movie.voteAverage)} • ${movie.displayReleaseDate.take(4)}",
                                 color = Color.White.copy(alpha = 0.7f),
                                 fontSize = 12.sp
                             )
                         }
 
-                        // Neon Play FAB
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(TmdbTheme.PrimaryGradient),
+                                .background(TmdbCinematicTheme.PrimaryActionGradient),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = "Play Trailer",
+                                contentDescription = "Play",
                                 tint = Color.White
                             )
                         }
@@ -385,23 +396,54 @@ fun HeroTrendingPager(movies: List<FeaturedMovie>) {
     }
 }
 
-
-
-data class Top10IndiaMovie(
-    val id: Int,
-    val title: String,
-    val category: String,
-    val rating: String,
-    val posterUrl: String
-)
-
+// --- TRENDING 10 SECTION ---
 @Composable
-fun ModernTop10IndiaCard(
-    rank: Int,
-    movie: Top10IndiaMovie,
-    onMovieClick: (Top10IndiaMovie) -> Unit,
+fun ModernTop10Section(
+    top10List: List<Movies>,
+    onMovieClick: (Movies) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "TRENDING",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.5.sp
+            )
+        }
+
+        LazyRow(
+            contentPadding = PaddingValues(start = 12.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            itemsIndexed(top10List, key = { index, item -> "${item.id}_$index" }) { index, movie ->
+                ModernTop10Card(
+                    rank = index + 1,
+                    movie = movie,
+                    onMovieClick = onMovieClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ModernTop10Card(
+    rank: Int,
+    movie: Movies,
+    onMovieClick: (Movies) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val posterUrl = "$BASE_POSTER_IMAGE_URL${movie.posterPath}"
+
     Box(
         modifier = modifier
             .width(185.dp)
@@ -411,21 +453,19 @@ fun ModernTop10IndiaCard(
                 indication = null
             ) { onMovieClick(movie) }
     ) {
-        // LAYER 1: Large Outlined Rank Number positioned behind & overlapping left edge
         Text(
             text = "$rank",
             style = TextStyle(
                 fontSize = 110.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.White.copy(alpha = 0.12f),
-                drawStyle = Stroke(width = 6f) // Modern outlined typography effect
+                drawStyle = Stroke(width = 6f)
             ),
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .offset(x = (-6).dp, y = 14.dp)
         )
 
-        // LAYER 2: Main Floating Glass Poster Card
         Card(
             modifier = Modifier
                 .width(148.dp)
@@ -434,7 +474,6 @@ fun ModernTop10IndiaCard(
                 .shadow(
                     elevation = 16.dp,
                     shape = RoundedCornerShape(20.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.5f),
                     spotColor = Color.Black.copy(alpha = 0.6f)
                 ),
             shape = RoundedCornerShape(20.dp),
@@ -444,26 +483,15 @@ fun ModernTop10IndiaCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .border(
-                        width = 1.2.dp,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.45f),
-                                Color.White.copy(alpha = 0.08f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
+                    .border(1.2.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(20.dp))
             ) {
-                // High-Res Poster Image
                 AsyncImage(
-                    model = movie.posterUrl,
-                    contentDescription = movie.title,
+                    model = posterUrl,
+                    contentDescription = movie.displayTitle,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Dark Cinematic Overlay Gradient
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -478,7 +506,6 @@ fun ModernTop10IndiaCard(
                         )
                 )
 
-                // Top Floating Glass Rating Pill
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -497,32 +524,13 @@ fun ModernTop10IndiaCard(
                     )
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(
-                        text = movie.rating,
+                        text = String.format("%.1f", movie.voteAverage),
                         color = Color.White,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                // Bookmark Icon Button
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.BookmarkBorder,
-                        contentDescription = "Watchlist",
-                        tint = Color.White,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-
-                // Bottom Content Details & Quick Play Action
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -533,31 +541,27 @@ fun ModernTop10IndiaCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = movie.title,
+                            text = movie.displayTitle,
                             color = Color.White,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(1.dp))
                         Text(
-                            text = movie.category,
+                            text = movie.displayReleaseDate.take(4),
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 10.sp,
                             maxLines = 1
                         )
                     }
 
-                    // Neon Coral Action Button
                     Box(
                         modifier = Modifier
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(Color(0xFFFF5252), Color(0xFFFF7A00))
-                                )
-                            ),
+                            .background(TmdbCinematicTheme.PrimaryActionGradient),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -572,113 +576,98 @@ fun ModernTop10IndiaCard(
         }
     }
 }
+object GenreImageMapper {
+    private val genreImages = mapOf(
+        28 to "/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg", // Action
+        12 to "/xJHokMbljvjADYdit5fK2V2O2fH.jpg", // Adventure
+        16 to "/4mc3P2B1Y61Lz6Lh78v4c399bIe.jpg", // Animation
+        35 to "/r9P1O9vEaI2H6d76A5oF12C3b7.jpg", // Comedy
+        80 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg", // Crime
+        99 to "/uR2u32c0d8E8w0A2e3R0A7aF13C.jpg", // Documentary
+        18 to "/t53Uq4O8z4z3D7aI40A5N2e6C.jpg",  // Drama
+        10751 to "/3A2u32c0d8E8w0A2e3R0A7aF13C.jpg", // Family
+        14 to "/9X6L3k9cE3aI40A5N2e6C8xV1A.jpg",  // Fantasy
+        36 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg",  // History
+        27 to "/t53Uq4O8z4z3D7aI40A5N2e6C.jpg",  // Horror
+        10402 to "/r9P1O9vEaI2H6d76A5oF12C3b7.jpg", // Music
+        9648 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg", // Mystery
+        10749 to "/xJHokMbljvjADYdit5fK2V2O2fH.jpg", // Romance
+        878 to "/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg", // Sci-Fi
+        10770 to "/uR2u32c0d8E8w0A2e3R0A7aF13C.jpg", // TV Movie
+        53 to "/t53Uq4O8z4z3D7aI40A5N2e6C.jpg",   // Thriller
+        10752 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg", // War
+        37 to "/xJHokMbljvjADYdit5fK2V2O2fH.jpg"   // Western
+    )
 
+    fun getImageUrlForGenre(genreId: Int?): String {
+        val path = genreImages[genreId] ?: "/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg"
+        return "$BASE_BACKDROP_IMAGE_URL$path"
+    }
+}
+// --- EXPLORE BY GENRE ---
 @Composable
-fun ModernTop10IndiaSection(
-    top10List: List<Top10IndiaMovie>,
-    onMovieClick: (Top10IndiaMovie) -> Unit,
-    modifier: Modifier = Modifier
+fun TmdbCategoryExploreSection(
+    genres: List<Genre>,
+    onGenreClick: (Genre) -> Unit
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        // Section Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "TRENDING 10",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                /*Text(
-                    text = "🇮🇳",
-                    fontSize = 16.sp
-                )*/
-            }
-            /*Text(
-                text = "See all",
-                color = Color(0xFFFF7A00),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )*/
-        }
+    Column(modifier = Modifier.padding(vertical = 16.dp)) {
+        Text(
+            text = "EXPLORE BY GENRE",
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp).padding( bottom = 12.dp)
+        )
 
-        // Horizontal Carousel
         LazyRow(
-            contentPadding = PaddingValues(start = 12.dp, end = 16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            itemsIndexed(top10List, key = { _, item -> item.id }) { index, movie ->
-                ModernTop10IndiaCard(
-                    rank = index + 1,
-                    movie = movie,
-                    onMovieClick = onMovieClick
+            items(genres, key = { it.id!! }) { genre ->
+                val imageUrl = GenreImageMapper.getImageUrlForGenre(genre.id)
+
+                CategoryImageCard(
+                    categoryName = genre.name,
+                    imageUrl = imageUrl,
+                    onCategoryClick = { onGenreClick(genre) }
                 )
             }
         }
     }
 }
-/*cate*/
-// Data model matching dynamic TMDB API responses
-data class CategoryGenre(
-    val id: Int,
-    val name: String,
-    val imageUrl: String // Image fetched from dynamic TMDB endpoint
-)
 
 @Composable
 fun CategoryImageCard(
-    category: CategoryGenre,
-    isSelected: Boolean,
-    onCategoryClick: (CategoryGenre) -> Unit,
+    categoryName: String,
+    imageUrl: String,
+    onCategoryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .width(130.dp)
             .height(80.dp)
-            .clickable { onCategoryClick(category) },
+            .clickable { onCategoryClick() },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .then(
-                    if (isSelected) {
-                        Modifier.border(
-                            width = 2.dp,
-                            brush = AccentGradient,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                    } else {
-                        Modifier.border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                    }
-                )
+                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(16.dp))
         ) {
-            // Background Image loaded directly from TMDB
+            // Background Image
             AsyncImage(
-                model = category.imageUrl,
-                contentDescription = category.name,
+                model = imageUrl,
+                contentDescription = categoryName,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(16.dp))
             )
 
-            // Darkening Gradient overlay for maximum text contrast
+            // Darkening Gradient overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -693,9 +682,9 @@ fun CategoryImageCard(
                     )
             )
 
-            // Category Title Centered
+            // Title
             Text(
-                text = category.name,
+                text = categoryName,
                 color = Color.White,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -707,260 +696,37 @@ fun CategoryImageCard(
     }
 }
 
-// Horizontal scroll list component
+// --- LANDSCAPE SECTION ---
 @Composable
-fun DynamicCategorySection(
-    categories: List<CategoryGenre>,
-    selectedGenreId: Int?,
-    onCategorySelected: (CategoryGenre) -> Unit
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        items(categories, key = { it.id }) { category ->
-            CategoryImageCard(
-                category = category,
-                isSelected = category.id == selectedGenreId,
-                onCategoryClick = onCategorySelected
-            )
-        }
-    }
-}
-
-// --- DUMMY TMDB GENRE DATA WITH IMAGE BACKDROPS ---
-val dummyTmdbCategories = listOf(
-    CategoryGenre(
-        id = 28,
-        name = "Action",
-        imageUrl = "https://picsum.photos/seed/dune/600/350" // Dark Knight backdrop
-    ),
-    CategoryGenre(
-        id = 878,
-        name = "Sci-Fi",
-        imageUrl = "https://picsum.photos/seed/dune/600/350" // Dune backdrop
-    ),
-    CategoryGenre(
-        id = 35,
-        name = "Comedy",
-        imageUrl = "https://picsum.photos/seed/dune/600/350"
-    ),
-    CategoryGenre(
-        id = 27,
-        name = "Horror",
-        imageUrl = "https://picsum.photos/seed/dune/600/350"
-    ),
-    CategoryGenre(
-        id = 18,
-        name = "Drama",
-        imageUrl = "https://picsum.photos/seed/dune/600/350" // Oppenheimer backdrop
-    ),
-    CategoryGenre(
-        id = 53,
-        name = "Thriller",
-        imageUrl = "https://picsum.photos/seed/dune/600/350"
-    )
-)
-
-// --- PARENT INTEGRATION CONTAINER ---
-@Composable
-fun TmdbCategoryExploreSection() {
-    val categories = remember { dummyTmdbCategories }
-    var selectedGenreId by remember { mutableStateOf<Int?>(28) } // Default selected: Action (28)
-
-    Column(modifier = Modifier.padding(vertical = 16.dp)) {
-        // Section Title Header
-        Text(
-            text = "EXPLORE BY GENRE",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp,).padding( bottom = 12.dp)
-        )
-
-        // Dynamic Horizontal Category Scroll
-        DynamicCategorySection(
-            categories = categories,
-            selectedGenreId = selectedGenreId,
-            onCategorySelected = { clickedCategory ->
-                selectedGenreId = clickedCategory.id
-                // Trigger API call to fetch movies for this genre ID (e.g., viewModel.fetchMoviesByGenre(clickedCategory.id))
-            }
-        )
-    }
-}
-
-// --- COMPOSE PREVIEW ---
-/*@Preview(showBackground = true, widthDp = 412, heightDp = 200)
-@Composable
-fun DynamicCategorySectionPreview() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0F0E17))
-    ) {
-        TmdbCategoryExploreSection()
-    }
-}*/
-/*cat end*/
-
-
-// --- DATA MODEL FOR TMDB LANDSCAPE CATEGORIES ---
-data class TmdbLandscapeGenre(
-    val id: Int,
-    val name: String,
-    val backdropUrl: String // TMDB backdrop path (16:9)
-)
-
-// --- DUMMY DATA WITH REAL TMDB BACKDROP URLS ---
-val dummyLandscapeGenres = listOf(
-    TmdbLandscapeGenre(
-        id = 28,
-        name = "Action",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg"
-    ),
-    TmdbLandscapeGenre(
-        id = 878,
-        name = "Sci-Fi",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/xJHokMbljvjADYdit5fK2V2O2fH.jpg"
-    ),
-    TmdbLandscapeGenre(
-        id = 18,
-        name = "Drama",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/fm6K8O2e3R0A7aF13C8K2b4O6.jpg"
-    ),
-    TmdbLandscapeGenre(
-        id = 27,
-        name = "Horror",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/t53Uq4O8z4z3D7aI40A5N2e6C.jpg"
-    ),
-    TmdbLandscapeGenre(
-        id = 35,
-        name = "Comedy",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/r9P1O9vEaI2H6d76A5oF12C3b7.jpg"
-    )
-)
-
-// --- LANDSCAPE CATEGORY CARD COMPOSABLE ---
-@Composable
-fun LandscapeCategoryCard(
-    genre: TmdbLandscapeGenre,
-    isSelected: Boolean,
-    onGenreClick: (TmdbLandscapeGenre) -> Unit,
+fun LandscapeMoviesSection(
+    sectionTitle: String,
+    movies: List<Movies>,
+    onSeeAllClick: () -> Unit,
+    onMovieClick: (Movies) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier
-            .width(160.dp)  // 16:9 Proportional Width
-            .height(90.dp)  // 16:9 Proportional Height
-            .clickable { onGenreClick(genre) },
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (isSelected) {
-                        Modifier.border(
-                            width = 2.dp,
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(Color(0xFFFF5252), Color(0xFFFF7A00))
-                            ),
-                            shape = RoundedCornerShape(18.dp)
-                        )
-                    } else {
-                        Modifier.border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(18.dp)
-                        )
-                    }
-                )
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+        SectionHeader(title = sectionTitle, onSeeAllClick = onSeeAllClick)
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 16:9 High-Res Backdrop Image
-            AsyncImage(
-                model = genre.backdropUrl,
-                contentDescription = genre.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(18.dp))
-            )
+            items(movies, key = { it.id }) { movie ->
+                ContinueWatchingCard(
+                    movie = movie,
+                    onMovieClick = onMovieClick
+                )
 
-            // Cinematic Linear Scrim (Darkens bottom left for max readability)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.88f),
-                                Color.Black.copy(alpha = 0.20f)
-                            )
-                        )
-                    )
-            )
-
-            // Category Label
-            Text(
-                text = genre.name,
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 12.dp, bottom = 10.dp)
-            )
+            /*    LandscapeMovieCard(
+                    movie = movie,
+                    onMovieClick = onMovieClick
+                )*/
+            }
         }
     }
 }
-
-
-// --- DATA MODEL FOR MOVIES/SHOWS (TMDB Backdrop API) ---
-data class LandscapeMovie(
-    val id: Int,
-    val title: String,
-    val genreText: String,
-    val rating: String,
-    val backdropUrl: String
-)
-
-// --- DUMMY DATA FOR TESTING ---
-val dummyLandscapeMovies = listOf(
-    LandscapeMovie(
-        id = 1,
-        title = "Dune: Part Two",
-        genreText = "Sci-Fi • 2h 46m",
-        rating = "8.8",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg"
-    ),
-    LandscapeMovie(
-        id = 2,
-        title = "Oppenheimer",
-        genreText = "Biography • 3h 00m",
-        rating = "8.6",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/fm6K8O2e3R0A7aF13C8K2b4O6.jpg"
-    ),
-    LandscapeMovie(
-        id = 3,
-        title = "The Dark Knight",
-        genreText = "Action • 2h 32m",
-        rating = "9.0",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/nMK2819TyP3p0j5q6aL1x.jpg"
-    ),
-    LandscapeMovie(
-        id = 4,
-        title = "Interstellar",
-        genreText = "Sci-Fi • 2h 49m",
-        rating = "8.7",
-        backdropUrl = "https://image.tmdb.org/t/p/w780/xJHokMbljvjADYdit5fK2V2O2fH.jpg"
-    )
-)
-
+/*
 // --- LANDSCAPE MOVIE CARD COMPOSABLE ---
 @Composable
 fun LandscapeMovieCard(
@@ -1104,45 +870,38 @@ fun LandscapeMovieCard(
             }
         }
     }
-}
+}*/
 
 @Composable
 fun ContinueWatchingCard(
-    movie: LandscapeMovie,
-    onMovieClick: (LandscapeMovie) -> Unit,
-    modifier: Modifier = Modifier,
-    // Assigns random playback progress (30% to 85%) if no specific float value is passed
+    movie: Movies,
+    onMovieClick: (Movies) -> Unit,
     progress: Float = remember(movie.id) { Random.nextFloat() * 0.55f + 0.30f }
 ) {
+    val backdropUrl = "$BASE_BACKDROP_IMAGE_URL${movie.backdropPath}"
+
     Card(
-        modifier = modifier
-            .width(240.dp) // Wide 16:9 Landscape Frame
+        modifier = Modifier
+            .width(240.dp)
             .height(135.dp)
             .clickable { onMovieClick(movie) },
         shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .border(
-                    width = 1.dp,
-                    color = Color.White.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(18.dp)
-                )
+                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(18.dp))
         ) {
-            // 16:9 Backdrop Image
             AsyncImage(
-                model = movie.backdropUrl,
-                contentDescription = movie.title,
+                model = backdropUrl,
+                contentDescription = movie.displayTitle,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(18.dp))
             )
 
-            // Cinematic Dark Gradient Overlay (For Text Readability)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1158,7 +917,6 @@ fun ContinueWatchingCard(
                     )
             )
 
-            // Bottom Column: Title, Quick Play Button, & Progress Bar
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1172,23 +930,21 @@ fun ContinueWatchingCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = movie.title,
+                            text = movie.displayTitle,
                             color = TmdbCinematicTheme.TextPrimary,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = movie.genreText,
+                            text = "Release: ${movie.displayReleaseDate}",
                             color = TmdbCinematicTheme.TextSecondary,
                             fontSize = 11.sp,
                             maxLines = 1
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Neon Coral Resume Play Button
                     Box(
                         modifier = Modifier
                             .size(30.dp)
@@ -1207,7 +963,6 @@ fun ContinueWatchingCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Playback Progress Bar Line
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
@@ -1222,76 +977,10 @@ fun ContinueWatchingCard(
         }
     }
 }
-// --- LANDSCAPE MOVIES HORIZONTAL SECTION ---
-@Composable
-fun LandscapeMoviesSection(
-    sectionTitle: String,
-    movies: List<LandscapeMovie>,
-    onMovieClick: (LandscapeMovie) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-        // Section Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp,).padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = sectionTitle,
-                color = Color.White,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
-            Text(
-                text = "See all",
-                color = Color(0xFFFF7A00),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
 
-        // Horizontal Carousel
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            items(movies, key = { it.id }) { movie ->
-                ContinueWatchingCard(
-                    movie = movie,
-                    onMovieClick = onMovieClick
-                )
-
-                /*LandscapeMovieCard(
-                    movie = movie,
-                    onMovieClick = onMovieClick
-                )*/
-            }
-        }
-    }
-}
-
-// --- COMPOSE PREVIEW ---
-@Preview(showBackground = true, widthDp = 412, heightDp = 260)
+// --- STANDARD COMPONENTS ---
 @Composable
-fun LandscapeMoviesSectionPreview() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0F0E17))
-    ) {
-        LandscapeMoviesSection(
-            sectionTitle = "CONTINUE WATCHING",
-            movies = dummyLandscapeMovies,
-            onMovieClick = {}
-        )
-    }
-}
-@Composable
-fun SectionHeader(title: String) {
+fun SectionHeader(title: String, onSeeAllClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1307,17 +996,25 @@ fun SectionHeader(title: String) {
         )
         Text(
             text = "See all",
-            color = Color(0xFFFF7A00),
+            color = TmdbCinematicTheme.CoralAccent,
             fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.clickable { onSeeAllClick() }
         )
     }
 }
 
 @Composable
-fun MoviePosterGridCard(movie: PosterMovie) {
+fun MoviePosterGridCard(
+    movie: Movies,
+    onMovieClick: () -> Unit
+) {
+    val posterUrl = "$BASE_POSTER_IMAGE_URL${movie.posterPath}"
+
     Column(
-        modifier = Modifier.width(130.dp)
+        modifier = Modifier
+            .width(130.dp)
+            .clickable { onMovieClick() }
     ) {
         Card(
             modifier = Modifier
@@ -1328,13 +1025,12 @@ fun MoviePosterGridCard(movie: PosterMovie) {
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
-                    model = movie.posterUrl,
-                    contentDescription = movie.title,
+                    model = posterUrl,
+                    contentDescription = movie.displayTitle,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Rating Badge (Top Right)
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -1352,7 +1048,7 @@ fun MoviePosterGridCard(movie: PosterMovie) {
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
-                        text = movie.rating,
+                        text = String.format("%.1f", movie.voteAverage),
                         color = Color.White,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
@@ -1362,37 +1058,42 @@ fun MoviePosterGridCard(movie: PosterMovie) {
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = movie.title,
+            text = movie.displayTitle,
             color = Color.White,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
 @Composable
-fun MovieDetailedRowCard(item: DetailedMovieRow) {
+fun MovieDetailedRowCard(
+    item: Movies,
+    onMovieClick: () -> Unit
+) {
+    val posterUrl = "$BASE_POSTER_IMAGE_URL${item.posterPath}"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(110.dp)
-            .padding(vertical = 8.dp),
+            .clickable { onMovieClick() },
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = TmdbTheme.GlassSurface
-        ),
+        colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
+                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(18.dp))
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = item.posterUrl,
-                contentDescription = item.title,
+                model = posterUrl,
+                contentDescription = item.displayTitle,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(90.dp)
@@ -1407,23 +1108,24 @@ fun MovieDetailedRowCard(item: DetailedMovieRow) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = item.title,
+                    text = item.displayTitle,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${item.rating} • ${item.desc}",
+                    text = "★ ${String.format("%.1f", item.voteAverage)} • ${item.overview}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.White.copy(alpha = 0.7f),
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Watchlist CTA
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
@@ -1431,7 +1133,11 @@ fun MovieDetailedRowCard(item: DetailedMovieRow) {
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "Watchlist", color = Color.White, fontSize = 10.sp)
+                    Text(
+                        text = item.displayReleaseDate.take(4).ifEmpty { "TMDB" },
+                        color = Color.White,
+                        fontSize = 10.sp
+                    )
                 }
             }
         }
@@ -1441,5 +1147,5 @@ fun MovieDetailedRowCard(item: DetailedMovieRow) {
 @Preview(showBackground = true, widthDp = 412, heightDp = 850)
 @Composable
 fun TmdbHomeScreenPreview() {
-    TmdbHomeScreen()
+    //TmdbHomeScreen()
 }

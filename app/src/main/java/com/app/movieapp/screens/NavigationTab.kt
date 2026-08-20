@@ -260,7 +260,7 @@ fun MainAppScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.Home.route) {
-                TmdbHomeScreen()
+                TmdbHomeScreen(navController =rootNavController )
             }
             composable(Screen.Movies.route) {
                 MovieGridScreen("Movies")

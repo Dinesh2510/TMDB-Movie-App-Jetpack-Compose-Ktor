@@ -1,8 +1,12 @@
 package com.app.movieapp.screens
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,8 +26,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SwipeLeft
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +45,9 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
+import com.app.movieapp.screens.Componets.SavedMovieCard
 import com.app.movieapp.screens.Componets.SearchMovieCard
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
@@ -63,11 +74,11 @@ fun SavedMovieScreen(
 ) {
     val roomData by watchListViewModel.myMovieData.value.collectAsState(initial = emptyList())
     val context = LocalContext.current
+    var showSwipeTip by rememberSaveable { mutableStateOf(true) }
 
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            // Glassmorphic Top Header Bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -78,7 +89,6 @@ fun SavedMovieScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Back & Title Group
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = { navController.popBackStack() },
@@ -117,7 +127,6 @@ fun SavedMovieScreen(
                         }
                     }
 
-                    // Search Shortcut
                     IconButton(
                         onClick = { navController.navigate(MovieAppScreen.MOVIE_SEARCH.route) },
                         modifier = Modifier
@@ -144,7 +153,6 @@ fun SavedMovieScreen(
                 .padding(padding)
         ) {
             if (roomData.isEmpty()) {
-                // Empty Watchlist State
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -194,7 +202,6 @@ fun SavedMovieScreen(
                     )
                 }
             } else {
-                // Watchlist Items List
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -202,6 +209,66 @@ fun SavedMovieScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
                 ) {
+                    // --- ONE-TIME SWIPE HINT BANNER ---
+                    item {
+                        AnimatedVisibility(
+                            visible = showSwipeTip,
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(TmdbCinematicTheme.GlassSurface)
+                                    .border(
+                                        1.dp,
+                                        TmdbCinematicTheme.CoralAccent.copy(alpha = 0.3f),
+                                        RoundedCornerShape(16.dp)
+                                    )
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.SwipeLeft,
+                                            contentDescription = "Swipe Hint",
+                                            tint = TmdbCinematicTheme.CoralAccent,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = "Tip: Swipe left on any item to remove it from your watchlist.",
+                                            color = TmdbCinematicTheme.TextSecondary,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            lineHeight = 16.sp
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Dismiss Button
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Dismiss Tip",
+                                        tint = TmdbCinematicTheme.TextSecondary,
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .clickable { showSwipeTip = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // --- WATCHLIST ITEMS ---
                     items(roomData, key = { it.mediaId }) { movie ->
                         val imageUrl = movie.imagePath?.let { BASE_POSTER_IMAGE_URL + it } ?: ""
 
@@ -224,7 +291,7 @@ fun SavedMovieScreen(
                             enableDismissFromStartToEnd = false,
                             backgroundContent = { CinematicDismissBackground(dismissState) },
                             content = {
-                                SearchMovieCard(
+                                SavedMovieCard(
                                     imageUrl = imageUrl,
                                     title = movie.title ?: "Untitled",
                                     overview = movie.releaseDate ?: ""
@@ -244,35 +311,45 @@ fun SavedMovieScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CinematicDismissBackground(dismissState: SwipeToDismissBoxState) {
-    val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
-        Color(0xFF2C151B) // Dark Red Tint
-    } else {
-        Color.Transparent
-    }
+    val isSwiping = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .clip(RoundedCornerShape(20.dp))
-            .background(color)
-            .border(1.dp, TmdbCinematicTheme.CoralAccent.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+            .background(if (isSwiping) Color(0xFF3E1219) else Color.Transparent)
+            .border(
+                width = if (isSwiping) 1.dp else 0.dp,
+                color = if (isSwiping) TmdbCinematicTheme.CoralAccent else Color.Transparent,
+                shape = RoundedCornerShape(20.dp)
+            )
             .padding(horizontal = 20.dp),
         contentAlignment = Alignment.CenterEnd
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Remove",
-                color = TmdbCinematicTheme.CoralAccent,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Default.DeleteSweep,
-                contentDescription = "Delete",
-                tint = TmdbCinematicTheme.CoralAccent,
-                modifier = Modifier.size(24.dp)
-            )
+        if (isSwiping) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Remove",
+                    color = TmdbCinematicTheme.CoralAccent,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(TmdbCinematicTheme.CoralAccent.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteSweep,
+                        contentDescription = "Delete",
+                        tint = TmdbCinematicTheme.CoralAccent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }

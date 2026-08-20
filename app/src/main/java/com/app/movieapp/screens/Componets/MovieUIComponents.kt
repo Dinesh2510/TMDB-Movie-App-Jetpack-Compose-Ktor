@@ -86,6 +86,14 @@ import com.app.movieapp.utlis.Constants
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import com.app.movieapp.utlis.netflixFamily
 
+import androidx.compose.foundation.layout.fillMaxHeight
+
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.CalendarToday
+
+import androidx.compose.ui.draw.shadow
+
+import com.app.movieapp.ui.theme.TmdbCinematicTheme
 class MovieUIComponents : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -205,66 +213,215 @@ fun HomeThumbRectWithTitle(
 }
 
 
+
+
 @Composable
 fun SearchMovieCard(
     imageUrl: String,
     title: String?,
-    overview: String?,
-    OpenDetailsPage: () -> Unit,
+    overview: String?, // Acts as release date or description
+    onCardClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.padding(8.dp),
-        onClick = {
-            OpenDetailsPage()
-        },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
-                3.dp
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(115.dp)
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(20.dp),
+                spotColor = Color.Black.copy(alpha = 0.5f)
             )
-        ),
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(20.dp))
+            .clickable { onCardClick() },
+        colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(verticalAlignment = CenterVertically) {
-            Card(Modifier.size(128.dp)) {
-                Image(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    painter = rememberAsyncImagePainter(
-                        ImageRequest.Builder(LocalContext.current).data(data = imageUrl)
-                            .apply(block = fun ImageRequest.Builder.() {
-                                size(Size.ORIGINAL)
-                                scale(Scale.FILL)
-                                crossfade(true)
-                            }).build()
-                    ),
-                    contentScale = ContentScale.FillWidth,
-                    contentDescription = null
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 1. Poster Thumbnail Frame
+            Box(
+                modifier = Modifier
+                    .width(90.dp)
+                    .fillMaxHeight()
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White.copy(alpha = 0.05f))
+            ) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // 2. Movie Info Details Column
             Column(
-                Modifier
-                    .padding(vertical = 14.dp, horizontal = 14.dp)
+                modifier = Modifier
                     .weight(1f)
+                    .fillMaxHeight()
+                    .padding(vertical = 14.dp, horizontal = 8.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                if (title != null) {
-                    Text(
-                        text = title, maxLines = 1,
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W500)
-                    )
-                }
-                if (overview != null) {
-                    Text(
-                        text = overview, maxLines = 2,
-                        color = MaterialTheme.colorScheme.outline,
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                // Title
+                Text(
+                    text = title ?: "Untitled",
+                    color = TmdbCinematicTheme.TextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Release Date or Overview Line with Icon
+                if (!overview.isNullOrBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                       Text(
+                            text = overview,
+                            color = TmdbCinematicTheme.TextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 
+            // 3. Right Action Arrow Indicator
+            Box(
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.05f))
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = "Open Details",
+                    tint = TmdbCinematicTheme.TextSecondary,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
         }
     }
 }
 
+@Composable
+fun SavedMovieCard(
+    imageUrl: String,
+    title: String?,
+    overview: String?,
+    onCardClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(115.dp)
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(20.dp),
+                spotColor = Color.Black.copy(alpha = 0.6f)
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(20.dp))
+            .clickable { onCardClick() },
+        // Use solid dark background to prevent background bleed-through
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF13111C)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 1. Poster Image Frame
+            Box(
+                modifier = Modifier
+                    .width(90.dp)
+                    .fillMaxHeight()
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White.copy(alpha = 0.05f))
+            ) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // 2. Movie Info Column
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(vertical = 14.dp, horizontal = 8.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = title ?: "Untitled",
+                    color = TmdbCinematicTheme.TextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                if (!overview.isNullOrBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = "Release Date",
+                            tint = TmdbCinematicTheme.CoralAccent,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = overview,
+                            color = TmdbCinematicTheme.TextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            // 3. Right Arrow Shortcut
+            Box(
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.05f))
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = "Open Details",
+                    tint = TmdbCinematicTheme.TextSecondary,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+        }
+    }
+}
 @Composable
 fun HomeSmallThumb(imageUrl: String, OpenDetailsPage: () -> Unit) {
     Card(

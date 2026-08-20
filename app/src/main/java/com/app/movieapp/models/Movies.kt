@@ -12,6 +12,8 @@ data class Movies(
     val id: Int = 0,
     @SerialName("adult")
     val adult: Boolean = false,
+    @SerialName("softcore")
+    val softcore: Boolean = false,
     @SerialName("backdrop_path")
     val backdropPath: String? = null,
     @SerialName("poster_path")
@@ -26,6 +28,10 @@ data class Movies(
     val imdbId: String? = null,
     @SerialName("original_language")
     val originalLanguage: String = "",
+    @SerialName("original_name")
+    val originalName: String? = null,
+    @SerialName("origin_country")
+    val originCountry: List<String>? = emptyList(),
     @SerialName("overview")
     val overview: String = "",
     @SerialName("popularity")
@@ -53,7 +59,7 @@ data class Movies(
      * and TV Shows (name, first_air_date) without Gson alternates
      */
     val displayTitle: String
-        get() = title ?: name ?: ""
+        get() = title ?: name ?: originalName ?: ""
 
     val displayReleaseDate: String
         get() = releaseDate ?: firstAirDate ?: ""

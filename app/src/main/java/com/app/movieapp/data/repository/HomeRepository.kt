@@ -54,7 +54,10 @@ class HomeRepository(private val apiService: ApiService) {
         val response = apiService.getTrendingMovies(page = 1)
         emit(response)
     }.flowOn(Dispatchers.IO)
-
+    fun getTrendingAllRepo(): Flow<MovieResponse> = flow {
+        val response = apiService.getTrendingAll(page = 1)
+        emit(response)
+    }.flowOn(Dispatchers.IO)
     fun getUpcomingMoviesRepo(): Flow<MovieResponse> = flow {
         val response = apiService.getUpcomingMovies(page = 1)
         emit(response)

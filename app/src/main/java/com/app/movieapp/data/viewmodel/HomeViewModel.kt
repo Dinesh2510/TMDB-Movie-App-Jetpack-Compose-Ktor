@@ -11,48 +11,59 @@ import com.app.movieapp.data.remote.response.GenreResponse
 import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.data.repository.HomeRepository
 import com.app.movieapp.models.Movies
-import com.app.movieapp.utlis.MovieState
 import com.app.movieapp.utlis.NetworkUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+
+// Unified UI State for single-pass Home Feed loading
+sealed interface HomeFeedUIState {
+    data object Loading : HomeFeedUIState
+    data class Success(
+        val discoverMovies: MovieResponse?,
+        val trendingMovies: MovieResponse?,
+        val nowPlayingMovies: MovieResponse?,
+        val upcomingMovies: MovieResponse?,
+        val genres: GenreResponse?,
+        val trendingAll: MovieResponse?
+    ) : HomeFeedUIState
+    data class Error(val message: String) : HomeFeedUIState
+}
 
 class HomeViewModel(private val repository: HomeRepository) : ViewModel() {
 
-    private val _discoveryMovieResponses: MutableStateFlow<MovieState<MovieResponse?>> =
-        MutableStateFlow(MovieState.Loading)
-    val discoveryMovieResponses: StateFlow<MovieState<MovieResponse?>> = _discoveryMovieResponses.asStateFlow()
+    private val _homeFeedState = MutableStateFlow<HomeFeedUIState>(HomeFeedUIState.Loading)
+    val homeFeedState: StateFlow<HomeFeedUIState> = _homeFeedState.asStateFlow()
 
-    private val _trendingMovieResponses: MutableStateFlow<MovieState<MovieResponse?>> =
-        MutableStateFlow(MovieState.Loading)
-    val trendingMovieResponses: StateFlow<MovieState<MovieResponse?>> = _trendingMovieResponses.asStateFlow()
+    private val _selectedGenreId = MutableStateFlow<Int?>(null)
 
-    private val _nowPlayingMoviesResponses: MutableStateFlow<MovieState<MovieResponse?>> =
-        MutableStateFlow(MovieState.Loading)
-    val nowPlayingMoviesResponses: StateFlow<MovieState<MovieResponse?>> = _nowPlayingMoviesResponses.asStateFlow()
-
-    private val _upcomingMoviesResponses: MutableStateFlow<MovieState<MovieResponse?>> =
-        MutableStateFlow(MovieState.Loading)
-    val upcomingMoviesResponses: StateFlow<MovieState<MovieResponse?>> = _upcomingMoviesResponses.asStateFlow()
-
-    private val _genresMoviesResponses: MutableStateFlow<MovieState<GenreResponse?>> =
-        MutableStateFlow(MovieState.Loading)
-    val genresMoviesResponses: StateFlow<MovieState<GenreResponse?>> = _genresMoviesResponses.asStateFlow()
-
-    var genresWiseMovieListState: Flow<PagingData<Movies>>? = null
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val genresWiseMovieListState: Flow<PagingData<Movies>> = _selectedGenreId
+        .filterNotNull()
+        .flatMapLatest { genreId ->
+            repository.getGenresWiseMovieRepo(genreId).flow
+        }
+        .cachedIn(viewModelScope)
 
     private val networkUtils = NetworkUtils()
     val networkType = networkUtils.networkType
 
+    // Pagination Streams for "See All" screens
+    val nowPlayingAllListState = repository.getAllMoviesPagination("nowPlayingAllListScreen").flow.cachedIn(viewModelScope)
+    val popularAllListState = repository.getAllMoviesPagination("popularAllListScreen").flow.cachedIn(viewModelScope)
+    val discoverListState = repository.getAllMoviesPagination("discoverListScreen").flow.cachedIn(viewModelScope)
+    val upcomingListState = repository.getAllMoviesPagination("upcomingListScreen").flow.cachedIn(viewModelScope)
+
     init {
-        fetchDiscoverMovies()
-        fetchTrendingMovies()
-        fetchNowPlayingMovies()
-        fetchUpcomingMovies()
-        fetchGenreResponse()
+        fetchAllHomeData()
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -60,68 +71,36 @@ class HomeViewModel(private val repository: HomeRepository) : ViewModel() {
         networkUtils.registerNetworkCallback(context)
     }
 
-    // Pagination Streams
-    val nowPlayingAllListState = repository.getAllMoviesPagination("nowPlayingAllListScreen").flow.cachedIn(viewModelScope)
-    val popularAllListState = repository.getAllMoviesPagination("popularAllListScreen").flow.cachedIn(viewModelScope)
-    val discoverListState = repository.getAllMoviesPagination("discoverListScreen").flow.cachedIn(viewModelScope)
-    val upcomingListState = repository.getAllMoviesPagination("upcomingListScreen").flow.cachedIn(viewModelScope)
+    /**
+     * Parallel execution of all home API requests using async/awaitAll.
+     * Guarantees a single loading state pass without redundant re-triggers.
+     */
+    fun fetchAllHomeData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _homeFeedState.value = HomeFeedUIState.Loading
+            try {
+                val discoverDeferred = async { repository.getDiscoverMoviesRepo().first() }
+                val trendingDeferred = async { repository.getTrendingMoviesRepo().first() }
+                val nowPlayingDeferred = async { repository.getNowPlayingMoviesRepo().first() }
+                val upcomingDeferred = async { repository.getUpcomingMoviesRepo().first() }
+                val genresDeferred = async { repository.getMovieGenresRepo().first() }
+                val trendingAllDeferred = async { repository.getTrendingAllRepo().first() }
+
+                _homeFeedState.value = HomeFeedUIState.Success(
+                    discoverMovies = discoverDeferred.await(),
+                    trendingMovies = trendingDeferred.await(),
+                    nowPlayingMovies = nowPlayingDeferred.await(),
+                    upcomingMovies = upcomingDeferred.await(),
+                    genres = genresDeferred.await(),
+                    trendingAll = trendingAllDeferred.await()
+                )
+            } catch (e: Exception) {
+                _homeFeedState.value = HomeFeedUIState.Error(e.localizedMessage ?: "Failed to load feed. Please try again.")
+            }
+        }
+    }
 
     fun setGenreData(genreSelected: Int) {
-        genresWiseMovieListState = repository.getGenresWiseMovieRepo(genreSelected).flow.cachedIn(viewModelScope)
-    }
-
-    fun fetchDiscoverMovies() {
-        viewModelScope.launch {
-            try {
-                val response = repository.getDiscoverMoviesRepo().first()
-                _discoveryMovieResponses.value = MovieState.Success(response)
-            } catch (e: Exception) {
-                _discoveryMovieResponses.value = MovieState.Error("An error occurred. Please try again.")
-            }
-        }
-    }
-
-    fun fetchTrendingMovies() {
-        viewModelScope.launch {
-            try {
-                val response = repository.getTrendingMoviesRepo().first()
-                _trendingMovieResponses.value = MovieState.Success(response)
-            } catch (e: Exception) {
-                _trendingMovieResponses.value = MovieState.Error("An error occurred. Please try again.")
-            }
-        }
-    }
-
-    fun fetchNowPlayingMovies() {
-        viewModelScope.launch {
-            try {
-                val response = repository.getNowPlayingMoviesRepo().first()
-                _nowPlayingMoviesResponses.value = MovieState.Success(response)
-            } catch (e: Exception) {
-                _nowPlayingMoviesResponses.value = MovieState.Error("An error occurred. Please try again.")
-            }
-        }
-    }
-
-    fun fetchUpcomingMovies() {
-        viewModelScope.launch {
-            try {
-                val response = repository.getUpcomingMoviesRepo().first()
-                _upcomingMoviesResponses.value = MovieState.Success(response)
-            } catch (e: Exception) {
-                _upcomingMoviesResponses.value = MovieState.Error("An error occurred. Please try again.")
-            }
-        }
-    }
-
-    fun fetchGenreResponse() {
-        viewModelScope.launch {
-            try {
-                val response = repository.getMovieGenresRepo().first()
-                _genresMoviesResponses.value = MovieState.Success(response)
-            } catch (e: Exception) {
-                _genresMoviesResponses.value = MovieState.Error("An error occurred. Please try again.")
-            }
-        }
+        _selectedGenreId.value = genreSelected
     }
 }

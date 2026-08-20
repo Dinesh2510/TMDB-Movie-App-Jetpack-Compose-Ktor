@@ -458,13 +458,7 @@ fun CastMediaSection(castList: List<Cast>) {
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
-            Text(
-                text = "ALL CAST",
-                color = TmdbCinematicTheme.CoralAccent,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
+
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -486,7 +480,7 @@ fun CastMemberAvatarItem(cast: Cast) {
         // Glowing Neon Circle Avatar Frame
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(75.dp)
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.05f))
                 .border(2.dp, TmdbCinematicTheme.CoralAccent, CircleShape),
@@ -523,7 +517,7 @@ fun CastMemberAvatarItem(cast: Cast) {
             overflow = TextOverflow.Ellipsis
         )
 
-        cast.name?.let { character ->
+        cast.character?.let { character ->
             Text(
                 text = "as $character",
                 color = TmdbCinematicTheme.TextSecondary,

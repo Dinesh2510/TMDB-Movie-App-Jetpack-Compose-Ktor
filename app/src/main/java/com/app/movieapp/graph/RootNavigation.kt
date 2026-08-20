@@ -157,8 +157,8 @@ fun RootNavigation(
 // Inside RootNavigation.kt
         composable(route = MovieAppScreen.MOVIE_HOME.route) {
             // Pass the root navController here!
-            OldMovieHomeScreen( navController)
-       //            MainAppScreen(rootNavController = navController)
+            //OldMovieHomeScreen( navController)
+                   MainAppScreen(rootNavController = navController)
         }
         composable(route = MovieAppScreen.MOVIE_ABOUT.route) {
             ScreenAbout()

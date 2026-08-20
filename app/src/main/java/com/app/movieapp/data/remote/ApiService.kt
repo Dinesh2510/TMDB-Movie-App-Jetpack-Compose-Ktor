@@ -13,6 +13,16 @@ import io.ktor.client.request.parameter
 
 class ApiService(private val client: HttpClient) {
 
+    suspend fun getTrendingAll(
+        page: Int = 1,
+        apiKey: String = API_KEY,
+        language: String = "en-US"
+    ): MovieResponse = client.get("trending/all/week") {
+        parameter("page", page)
+        parameter("api_key", apiKey)
+        parameter("language", language)
+    }.body()
+    
     // ==========================================
     // Movies
     // ==========================================
