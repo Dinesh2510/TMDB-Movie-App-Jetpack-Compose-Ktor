@@ -22,6 +22,7 @@
  */
 package com.app.movieapp.di
 
+import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.HomeViewModel
 import com.app.movieapp.data.viewmodel.MovieDetailsViewModel
 import com.app.movieapp.data.viewmodel.SearchViewModel
@@ -34,5 +35,6 @@ val viewModelModule = module {
     viewModelOf(::MovieDetailsViewModel)
     viewModelOf(::SearchViewModel)
     viewModelOf(::WatchListViewModel)
+    viewModelOf(::ContinueWatchingViewModel) // Added
 
 }

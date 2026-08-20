@@ -23,6 +23,7 @@
 
 package com.app.movieapp.di
 
+import com.app.movieapp.data.repository.ContinueWatchingRepository
 import com.app.movieapp.data.repository.HomeRepository
 import com.app.movieapp.data.repository.MovieDetailsRepository
 import com.app.movieapp.data.repository.MyListMovieRepository
@@ -35,4 +36,5 @@ val repositoryModule = module {
     singleOf(::HomeRepository)
     singleOf(::MovieDetailsRepository)
     singleOf(::SearchRepository) // Added missing repository dependency
+    singleOf(::ContinueWatchingRepository) // Added
 }

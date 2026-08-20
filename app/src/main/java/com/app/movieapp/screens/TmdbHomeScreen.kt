@@ -1,6 +1,5 @@
 package com.app.movieapp.screens
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,9 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,13 +85,20 @@ import androidx.compose.animation.core.tween
 
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.runtime.LaunchedEffect
+import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import kotlinx.coroutines.delay
+
+import androidx.compose.material.icons.filled.Close
+import com.app.movieapp.data.local.ContinueWatchingModel
+import com.app.movieapp.utlis.netflixFamily
 @Composable
 fun TmdbHomeScreen(
     navController: NavController,
-    viewModel: HomeViewModel = koinViewModel()
+    viewModel: HomeViewModel = koinViewModel(),
+    continueWatchingViewModel: ContinueWatchingViewModel = koinViewModel(),
 ) {
     val homeState by viewModel.homeFeedState.collectAsState()
+    val continueWatchingList by continueWatchingViewModel.continueWatchingList.collectAsState()
 
     Box(
         modifier = Modifier
@@ -137,22 +141,11 @@ fun TmdbHomeScreen(
                 }
             }
             is HomeFeedUIState.Success -> {
-                // 1. Hero Banner (Top Carousel) -> API: "discover/movie"
                 val discoverMovies = state.discoverMovies?.results ?: emptyList()
-
-// 2. TRENDING 10 Section -> API: "trending/all/week" (Strictly 10 items)
                 val trendingAllMovies = state.trendingAll?.results?.take(10) ?: emptyList()
-
-// 3. Now Playing in Theaters -> API: "movie/now_playing"
                 val nowPlayingMovies = state.nowPlayingMovies?.results ?: emptyList()
-
-// 4. Trending This Week -> API: "trending/movie/week"
                 val trendingMovies = state.trendingMovies?.results ?: emptyList()
-
-// 5. UPCOMING SPOTLIGHT -> API: "movie/upcoming"
                 val upcomingMovies = state.upcomingMovies?.results ?: emptyList()
-
-// 6. EXPLORE BY GENRE -> API: "genre/movie/list"
                 val genres = state.genres?.genres ?: emptyList()
 
                 LazyColumn(
@@ -178,7 +171,20 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 3. TRENDING 10 Section (From Trending All API)
+                    // --- 3. CONTINUE WATCHING SECTION ---
+                    if (continueWatchingList.isNotEmpty()) {
+                        item {
+                            ContinueWatchSection(
+                                continueWatchingList = continueWatchingList,
+                                navController = navController,
+                                onRemoveClick = { mediaId ->
+                                    continueWatchingViewModel.removeProgress(mediaId)
+                                }
+                            )
+                        }
+                    }
+
+                    // 4. TRENDING 10 Section (From Trending All API)
                     if (trendingAllMovies.isNotEmpty()) {
                         item {
                             ModernTop10Section(
@@ -190,7 +196,7 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 4. Continue Watching / Upcoming Spotlight
+                    // 5. Upcoming Spotlight
                     if (upcomingMovies.isNotEmpty()) {
                         item {
                             LandscapeMoviesSection(
@@ -206,7 +212,7 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 5. Explore by Genre Section
+                    // 6. Explore by Genre Section
                     if (genres.isNotEmpty()) {
                         item {
                             TmdbCategoryExploreSection(
@@ -218,7 +224,7 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 6. "Now Playing in Theaters" Section (Poster Grid)
+                    // 7. "Now Playing in Theaters" Section (Poster Grid)
                     if (nowPlayingMovies.isNotEmpty()) {
                         item {
                             SectionHeader(
@@ -243,7 +249,7 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 7. "Trending This Week" Section
+                    // 8. "Trending This Week" Section
                     if (trendingMovies.isNotEmpty()) {
                         item {
                             Spacer(modifier = Modifier.height(20.dp))
@@ -267,6 +273,43 @@ fun TmdbHomeScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ContinueWatchSection(
+    continueWatchingList: List<ContinueWatchingModel>,
+    navController: NavController,
+    onRemoveClick: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+    ) {
+        SectionHeader(
+            title = "Continue Watching",
+            onSeeAllClick = {}
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            items(continueWatchingList, key = { it.mediaId }) { item ->
+                ContinueWatchingCard(
+                    item = item,
+                    onCardClick = {
+                        navController.navigate(
+                            "${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${item.mediaId}"
+                        )
+                    },
+                    onRemoveClick = {
+                        onRemoveClick(item.mediaId)
+                    }
+                )
             }
         }
     }
@@ -939,7 +982,7 @@ fun LandscapeMovieCard(
 }
 
 @Composable
-fun ContinueWatchingCard(
+fun ContinueWatchingCardOLD(
     movie: Movies,
     onMovieClick: (Movies) -> Unit,
     progress: Float = remember(movie.id) { Random.nextFloat() * 0.55f + 0.30f }
@@ -1044,6 +1087,134 @@ fun ContinueWatchingCard(
     }
 }
 
+
+@Composable
+fun ContinueWatchingCard(
+    item: ContinueWatchingModel,
+    onCardClick: () -> Unit,
+    onRemoveClick: () -> Unit
+) {
+    val imageUrl = "$BASE_BACKDROP_IMAGE_URL${item.backdropPath ?: item.posterPath}"
+    val cardShape = RoundedCornerShape(16.dp)
+
+    Card(
+        modifier = Modifier
+            .width(230.dp)
+            .height(145.dp)
+            .clip(cardShape)
+            .clickable { onCardClick() },
+        shape = cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131927)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = item.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Dark vignette gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.4f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.9f)
+                            )
+                        )
+                    )
+            )
+
+            // Play center indicator
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .align(Alignment.Center)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = "Resume",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Quick Remove 'X' top right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable { onRemoveClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Remove",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+
+            // Bottom title + Remaining Time + Progress Bar
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.title,
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = netflixFamily,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${item.remainingMinutes}m left",
+                        color = Color(0xFFE50914),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Progress Bar
+                LinearProgressIndicator(
+                    progress = { item.progressFraction },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    color = Color(0xFFE50914),
+                    trackColor = Color.White.copy(alpha = 0.2f),
+                    strokeCap = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
 // --- STANDARD COMPONENTS ---
 @Composable
 fun SectionHeader(title: String, onSeeAllClick: () -> Unit = {}) {
