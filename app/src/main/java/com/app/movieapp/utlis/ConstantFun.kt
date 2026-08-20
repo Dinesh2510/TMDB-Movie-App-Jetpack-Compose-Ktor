@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.rememberAsyncImagePainter
 import com.app.movieapp.R
 import com.app.movieapp.models.Movies
+import com.app.movieapp.utlis.Constants.Companion.BASE_BACKDROP_IMAGE_URL
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -320,4 +321,36 @@ fun ExpandableText(
 }
 
 
+
+object GenreImageMapper {
+    private val genreImages = mapOf(
+        28 to "/4woSOUD0equAYzvwhWBHIJDCM88.jpg",    // Action (John Wick / Mad Max)
+        12 to "/8YFL5QQVPy3AgrEQxNYVSgiPEbe.jpg",   // Adventure (Dune / Avatar)
+        16 to "/74xTEgt7R36Fpooo50r9T25onhq.jpg",   // Animation (Spider-Verse)
+        35 to "/ekP6EVxVXwsG9ragCE793h00yVe.jpg",   // Comedy (Deadpool & Wolverine)
+        80 to "/tmU7GeKVybMWFButWEGl2M4GeiP.jpg",   // Crime (The Batman / Godfather)
+        99 to "/lA7y8uD2bSj93mG3zF1mQ4Z3yN8.jpg",   // Documentary (Planet Earth)
+        18 to "/kGzFbGhp99zva6oZODq5atUtnqi.jpg",   // Drama (Oppenheimer)
+        10751 to "/xgGGinKRL8xeRkaAR9RMbtyk60y.jpg",// Family (Inside Out 2)
+        14 to "/9BBTo63ANSmhC4e6r62OJFuK2GL.jpg",   // Fantasy (Lord of the Rings)
+        36 to "/r9pAZcoMsohmTmmvJqhgHSN544d.jpg",   // History (Gladiator)
+        27 to "/5A23kC1W0B50W9kK7k0Y9K2xV1A.jpg",   // Horror (Alien / Conjuring)
+        10402 to "/dBxub8qS8xU4zE7UqE0W6g9mP3q.jpg",// Music (Bohemian Rhapsody / La La Land)
+        9648 to "/7WJ2fbg9pA8j1yNq2fB4k9D3Y6L.jpg", // Mystery (Knives Out / Shutter Island)
+        10749 to "/v9P1O9vEaI2H6d76A5oF12C3b7.jpg", // Romance (Titanic / Pride & Prejudice)
+        878 to "/xOMo8BRK7PfcJv9JCnx7s520Wio.jpg",   // Science Fiction (Interstellar / Inception)
+        10770 to "/bOGkgRGdhrBYJSLpXaxhXVstNsV.jpg",// TV Movie
+        53 to "/9yBVqNruk6Ykrwc32qrK2TIE5xw.jpg",   // Thriller (Joker / Se7en)
+        10752 to "/w5sC7a9cK0Q7uW1k6m0X2v3Y9B1.jpg",// War (1917 / Saving Private Ryan)
+        37 to "/s4j0n21hF9xW0e6C1B4k9D3Y6L8.jpg"    // Western (Django Unchained)
+    )
+
+    // Fallback backdrop image (Dune Part Two)
+    private const val DEFAULT_BACKDROP = "/xOMo8BRK7PfcJv9JCnx7s520Wio.jpg"
+
+    fun getImageUrlForGenre(genreId: Int?): String {
+        val path = genreImages[genreId] ?: DEFAULT_BACKDROP
+        return "$BASE_BACKDROP_IMAGE_URL$path"
+    }
+}
 

@@ -1,5 +1,6 @@
 package com.app.movieapp.screens
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,11 +37,14 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -76,6 +81,7 @@ import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import com.app.movieapp.utlis.Constants.Companion.nowPlayingAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.popularAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.upcomingListScreen
+import com.app.movieapp.utlis.GenreImageMapper
 import org.koin.androidx.compose.koinViewModel
 import kotlin.random.Random
 
@@ -185,7 +191,7 @@ fun TmdbHomeScreen(
                         item {
                             LandscapeMoviesSection(
                                 sectionTitle = "UPCOMING SPOTLIGHT",
-                                movies = upcomingMovies.take(6),
+                                movies = upcomingMovies,
                                 onSeeAllClick = {
                                     navController.navigate("${MovieAppScreen.MOVIE_SEE_ALL.route}/$upcomingListScreen")
                                 },
@@ -483,7 +489,11 @@ fun ModernTop10Card(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .border(1.2.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(20.dp))
+                    .border(
+                        1.2.dp,
+                        TmdbCinematicTheme.GlassBorderGradient,
+                        RoundedCornerShape(20.dp)
+                    )
             ) {
                 AsyncImage(
                     model = posterUrl,
@@ -576,34 +586,7 @@ fun ModernTop10Card(
         }
     }
 }
-object GenreImageMapper {
-    private val genreImages = mapOf(
-        28 to "/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg", // Action
-        12 to "/xJHokMbljvjADYdit5fK2V2O2fH.jpg", // Adventure
-        16 to "/4mc3P2B1Y61Lz6Lh78v4c399bIe.jpg", // Animation
-        35 to "/r9P1O9vEaI2H6d76A5oF12C3b7.jpg", // Comedy
-        80 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg", // Crime
-        99 to "/uR2u32c0d8E8w0A2e3R0A7aF13C.jpg", // Documentary
-        18 to "/t53Uq4O8z4z3D7aI40A5N2e6C.jpg",  // Drama
-        10751 to "/3A2u32c0d8E8w0A2e3R0A7aF13C.jpg", // Family
-        14 to "/9X6L3k9cE3aI40A5N2e6C8xV1A.jpg",  // Fantasy
-        36 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg",  // History
-        27 to "/t53Uq4O8z4z3D7aI40A5N2e6C.jpg",  // Horror
-        10402 to "/r9P1O9vEaI2H6d76A5oF12C3b7.jpg", // Music
-        9648 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg", // Mystery
-        10749 to "/xJHokMbljvjADYdit5fK2V2O2fH.jpg", // Romance
-        878 to "/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg", // Sci-Fi
-        10770 to "/uR2u32c0d8E8w0A2e3R0A7aF13C.jpg", // TV Movie
-        53 to "/t53Uq4O8z4z3D7aI40A5N2e6C.jpg",   // Thriller
-        10752 to "/fm6K8O2e3R0A7aF13C8K2b4O6.jpg", // War
-        37 to "/xJHokMbljvjADYdit5fK2V2O2fH.jpg"   // Western
-    )
 
-    fun getImageUrlForGenre(genreId: Int?): String {
-        val path = genreImages[genreId] ?: "/8xV1A3Xi3A6d3aK0Ew7N3B40Ie.jpg"
-        return "$BASE_BACKDROP_IMAGE_URL$path"
-    }
-}
 // --- EXPLORE BY GENRE ---
 @Composable
 fun TmdbCategoryExploreSection(
@@ -616,7 +599,9 @@ fun TmdbCategoryExploreSection(
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp).padding( bottom = 12.dp)
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 12.dp)
         )
 
         LazyRow(
@@ -625,7 +610,7 @@ fun TmdbCategoryExploreSection(
         ) {
             items(genres, key = { it.id!! }) { genre ->
                 val imageUrl = GenreImageMapper.getImageUrlForGenre(genre.id)
-
+                //Log.e("TAG_imageUrl", "TmdbCategoryExploreSection: "+imageUrl )
                 CategoryImageCard(
                     categoryName = genre.name,
                     imageUrl = imageUrl,
@@ -705,7 +690,9 @@ fun LandscapeMoviesSection(
     onMovieClick: (Movies) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+    Column(modifier = modifier
+        .fillMaxWidth()
+        .padding(vertical = 12.dp)) {
         SectionHeader(title = sectionTitle, onSeeAllClick = onSeeAllClick)
 
         LazyRow(
@@ -713,7 +700,7 @@ fun LandscapeMoviesSection(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(movies, key = { it.id }) { movie ->
-                ContinueWatchingCard(
+                LandscapeMovieCard(
                     movie = movie,
                     onMovieClick = onMovieClick
                 )
@@ -726,14 +713,16 @@ fun LandscapeMoviesSection(
         }
     }
 }
-/*
+
 // --- LANDSCAPE MOVIE CARD COMPOSABLE ---
 @Composable
 fun LandscapeMovieCard(
-    movie: LandscapeMovie,
-    onMovieClick: (LandscapeMovie) -> Unit,
+    movie: Movies,
+    onMovieClick: (Movies) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val backdropUrl = "$BASE_BACKDROP_IMAGE_URL${movie.backdropPath}"
+
     Card(
         modifier = modifier
             .width(240.dp) // Wide 16:9 Landscape Frame
@@ -754,7 +743,7 @@ fun LandscapeMovieCard(
         ) {
             // 16:9 Backdrop Image from TMDB
             AsyncImage(
-                model = movie.backdropUrl,
+                model = backdropUrl,
                 contentDescription = movie.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -796,7 +785,7 @@ fun LandscapeMovieCard(
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
-                    text = movie.rating,
+                    text =  String.format("%.1f", movie.voteAverage),
                     color = Color.White,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
@@ -831,19 +820,22 @@ fun LandscapeMovieCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
+                    movie.title?.let {
+                        Text(
+                            text = it,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                    if (movie.genres?.isNotEmpty()!!) {
                     Text(
-                        text = movie.title,
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = movie.genreText,
+                        text = movie.genres.joinToString(" | ") { it.name },
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 11.sp,
                         maxLines = 1
-                    )
+                    )}
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -870,7 +862,7 @@ fun LandscapeMovieCard(
             }
         }
     }
-}*/
+}
 
 @Composable
 fun ContinueWatchingCard(
@@ -1067,80 +1059,171 @@ fun MoviePosterGridCard(
         )
     }
 }
-
 @Composable
 fun MovieDetailedRowCard(
     item: Movies,
+    modifier: Modifier = Modifier,
     onMovieClick: () -> Unit
 ) {
     val posterUrl = "$BASE_POSTER_IMAGE_URL${item.posterPath}"
+    val cardShape = RoundedCornerShape(16.dp)
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(110.dp)
+            .height(132.dp)
+            .clip(cardShape)
             .clickable { onMovieClick() },
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF131927).copy(alpha = 0.85f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(18.dp))
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.15f),
+                            Color.White.copy(alpha = 0.03f)
+                        )
+                    ),
+                    shape = cardShape
+                )
+                .padding(10.dp)
         ) {
-            AsyncImage(
-                model = posterUrl,
-                contentDescription = item.displayTitle,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color.DarkGray)
-            )
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.displayTitle,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "★ ${String.format("%.1f", item.voteAverage)} • ${item.overview}",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
+                // Movie Poster (Cinema 2:3 Ratio)
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
+                        .fillMaxHeight()
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF1E2638))
                 ) {
-                    Text(
-                        text = item.displayReleaseDate.take(4).ifEmpty { "TMDB" },
-                        color = Color.White,
-                        fontSize = 10.sp
+                    AsyncImage(
+                        model = posterUrl,
+                        contentDescription = item.displayTitle,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                // Movie Information
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Title & Language Header
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = item.displayTitle,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = Color.White,
+                                    letterSpacing = 0.2.sp
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Synopsis / Overview (2 lines)
+                        if (item.overview.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = item.overview,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
+                                    color = Color(0xFF94A3B8)
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Metadata Badges Footer (Rating, Year, Language)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        // Rating Pill
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFFFB800).copy(alpha = 0.15f))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Star,
+                                contentDescription = "Rating",
+                                tint = Color(0xFFFFB800),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = String.format("%.1f", item.voteAverage),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFFC72C),
+                                    fontSize = 11.sp
+                                )
+                            )
+                        }
+
+                        // Release Year Badge
+                        val releaseYear = item.displayReleaseDate.take(4)
+                        if (releaseYear.isNotBlank()) {
+                            MetadataPill(text = releaseYear)
+                        }
+
+                        // Original Language Badge
+                        if (item.originalLanguage.isNotBlank()) {
+                            MetadataPill(text = item.originalLanguage.uppercase())
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MetadataPill(text: String) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = Color.White.copy(alpha = 0.08f)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFCBD5E1),
+                fontSize = 10.sp
+            ),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+        )
     }
 }
 
