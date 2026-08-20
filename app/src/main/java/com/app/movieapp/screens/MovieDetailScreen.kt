@@ -210,12 +210,21 @@ fun DisplayMovieData(
     val context = LocalContext.current
     val date = SimpleDateFormat.getDateInstance().format(Date())
 
+// Format genres into a readable comma-separated string
+    val formattedGenres = moviesInfo.genres.joinToString(", ") { it.name }
+
     val myListMovie = WatchListModel(
         mediaId = moviesInfo.id,
-        imagePath = moviesInfo.posterPath,
         title = moviesInfo.title,
+        posterPath = moviesInfo.posterPath,
+        backdropPath = moviesInfo.backdropPath,
         releaseDate = moviesInfo.releaseDate,
         rating = moviesInfo.voteAverage,
+        runtime = moviesInfo.runtime,
+        overview = moviesInfo.overview.orEmpty(),
+        genres = formattedGenres,
+        originalLanguage = moviesInfo.spokenLanguages.firstOrNull()?.name ?: "English",
+        mediaType = "movie",
         addedOn = date
     )
 

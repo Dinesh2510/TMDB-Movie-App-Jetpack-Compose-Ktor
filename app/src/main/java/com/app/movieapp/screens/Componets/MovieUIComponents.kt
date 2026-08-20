@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -90,8 +91,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.Surface
 
 import androidx.compose.ui.draw.shadow
+import com.app.movieapp.data.local.WatchListModel
 
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 class MovieUIComponents : ComponentActivity() {
@@ -318,108 +322,202 @@ fun SearchMovieCard(
 
 @Composable
 fun SavedMovieCard(
-    imageUrl: String,
-    title: String?,
-    overview: String?,
-    onCardClick: () -> Unit,
+    item: WatchListModel,
+    modifier: Modifier = Modifier,
+    onCardClick: () -> Unit
 ) {
+    val posterUrl = item.posterPath?.let { "$BASE_POSTER_IMAGE_URL$it" }
+        ?: item.backdropPath?.let { "$BASE_POSTER_IMAGE_URL$it" }
+        ?: ""
+
+    val cardShape = RoundedCornerShape(18.dp)
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(115.dp)
+            .height(134.dp)
+            .clip(cardShape)
+            .clickable { onCardClick() }
             .shadow(
                 elevation = 8.dp,
                 shape = RoundedCornerShape(20.dp),
                 spotColor = Color.Black.copy(alpha = 0.6f)
             )
             .clip(RoundedCornerShape(20.dp))
-            .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(20.dp))
-            .clickable { onCardClick() },
-        // Use solid dark background to prevent background bleed-through
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF13111C)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(20.dp)),
+        shape = cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131927).copy(alpha = 0.9f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.15f),
+                            Color.White.copy(alpha = 0.03f)
+                        )
+                    ),
+                    shape = cardShape
+                )
+                .padding(10.dp)
         ) {
-            // 1. Poster Image Frame
-            Box(
-                modifier = Modifier
-                    .width(90.dp)
-                    .fillMaxHeight()
-                    .padding(8.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color.White.copy(alpha = 0.05f))
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+                // 1. Movie Poster (Cinema 2:3 Ratio)
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF1E2638))
+                ) {
+                    AsyncImage(
+                        model = posterUrl,
+                        contentDescription = item.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
-            Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-            // 2. Movie Info Column
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(vertical = 14.dp, horizontal = 8.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = title ?: "Untitled",
-                    color = TmdbCinematicTheme.TextPrimary,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                // 2. Movie Information & Metadata
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Header: Title & Forward Arrow
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = item.title,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color.White,
+                                    letterSpacing = 0.2.sp
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 16.dp)
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                    contentDescription = "Open Details",
+                                    tint = TmdbCinematicTheme.TextSecondary,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                            }
+                        }
 
-                if (!overview.isNullOrBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarToday,
-                            contentDescription = "Release Date",
-                            tint = TmdbCinematicTheme.CoralAccent,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = overview,
-                            color = TmdbCinematicTheme.TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        // Synopsis / Overview or Genres fallback (2 lines)
+                        val displayDescription = item.overview.ifBlank { item.genres }
+                        if (displayDescription.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = displayDescription,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
+                                    color = Color(0xFF94A3B8)
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Metadata Badges Footer (Rating, Year, Duration, Language)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        // Rating Pill
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFFFB800).copy(alpha = 0.15f))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Star,
+                                contentDescription = "Rating",
+                                tint = Color(0xFFFFB800),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = String.format("%.1f", item.rating),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFFC72C),
+                                    fontSize = 11.sp
+                                )
+                            )
+                        }
+
+                        // Release Year
+                        val releaseYear = item.releaseDate.take(4)
+                        if (releaseYear.isNotBlank()) {
+                            MetadataPill(text = releaseYear)
+                        }
+
+                        // Duration
+                        item.runtime?.let { duration ->
+                            if (duration > 0) {
+                                MetadataPill(text = "${duration}m")
+                            }
+                        }
+
+                        // Language
+                        if (item.originalLanguage.isNotBlank()) {
+                            MetadataPill(text = item.originalLanguage.take(3).uppercase())
+                        }
                     }
                 }
             }
-
-            // 3. Right Arrow Shortcut
-            Box(
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.05f))
-                    .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                    contentDescription = "Open Details",
-                    tint = TmdbCinematicTheme.TextSecondary,
-                    modifier = Modifier.size(12.dp)
-                )
-            }
         }
+    }
+}
+
+@Composable
+private fun MetadataPill(text: String) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = Color.White.copy(alpha = 0.08f)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFCBD5E1),
+                fontSize = 10.sp
+            ),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+        )
     }
 }
 @Composable

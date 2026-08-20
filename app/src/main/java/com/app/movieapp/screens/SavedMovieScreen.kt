@@ -90,7 +90,7 @@ fun SavedMovieScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
+                       /* IconButton(
                             onClick = { navController.popBackStack() },
                             modifier = Modifier
                                 .size(40.dp)
@@ -106,7 +106,7 @@ fun SavedMovieScreen(
                                     .size(16.dp)
                                     .padding(start = 4.dp)
                             )
-                        }
+                        }*/
 
                         Spacer(modifier = Modifier.width(12.dp))
 
@@ -269,9 +269,8 @@ fun SavedMovieScreen(
                     }
 
                     // --- WATCHLIST ITEMS ---
+                    // Inside SavedMovieScreen.kt -> LazyColumn -> items(roomData, key = { it.mediaId })
                     items(roomData, key = { it.mediaId }) { movie ->
-                        val imageUrl = movie.imagePath?.let { BASE_POSTER_IMAGE_URL + it } ?: ""
-
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { dismissValue ->
                                 when (dismissValue) {
@@ -291,11 +290,7 @@ fun SavedMovieScreen(
                             enableDismissFromStartToEnd = false,
                             backgroundContent = { CinematicDismissBackground(dismissState) },
                             content = {
-                                SavedMovieCard(
-                                    imageUrl = imageUrl,
-                                    title = movie.title ?: "Untitled",
-                                    overview = movie.releaseDate ?: ""
-                                ) {
+                                SavedMovieCard(item = movie) {
                                     navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.mediaId}")
                                 }
                             }

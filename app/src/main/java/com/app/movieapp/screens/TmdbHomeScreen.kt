@@ -84,7 +84,11 @@ import com.app.movieapp.utlis.Constants.Companion.upcomingListScreen
 import com.app.movieapp.utlis.GenreImageMapper
 import org.koin.androidx.compose.koinViewModel
 import kotlin.random.Random
+import androidx.compose.animation.core.tween
 
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 @Composable
 fun TmdbHomeScreen(
     navController: NavController,
@@ -312,19 +316,51 @@ fun HomeHeader(onSearchClick: () -> Unit) {
 }
 
 // --- Hero Banner Pager ---
+
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HeroTrendingPager(
     movies: List<Movies>,
+    modifier: Modifier = Modifier,
+    autoScrollDurationMs: Long = 3500L,
     onMovieClick: (Int) -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { movies.size })
+    if (movies.isEmpty()) return
 
-    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        pageCount = { movies.size }
+    )
+
+    // Detect user dragging to pause auto-scroll
+    val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+
+    // Smooth auto-scroll loop
+    LaunchedEffect(isDragged, movies.size) {
+        if (!isDragged && movies.size > 1) {
+            while (true) {
+                delay(autoScrollDurationMs)
+                val nextPage = (pagerState.currentPage + 1) % movies.size
+                pagerState.animateScrollToPage(
+                    page = nextPage,
+                    animationSpec = tween(
+                        durationMillis = 800 // Smooth slide duration
+                    )
+                )
+            }
+        }
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = 16.dp),
-            pageSpacing = 12.dp
+            pageSpacing = 12.dp,
+            modifier = Modifier.fillMaxWidth()
         ) { page ->
             val movie = movies[page]
             val backdropUrl = "$BASE_BACKDROP_IMAGE_URL${movie.backdropPath}"
@@ -332,10 +368,12 @@ fun HeroTrendingPager(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(210.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .clickable { onMovieClick(movie.id) },
                 shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131927))
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
@@ -345,6 +383,7 @@ fun HeroTrendingPager(
                         modifier = Modifier.fillMaxSize()
                     )
 
+                    // Cinematic Gradient Overlay
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -352,12 +391,15 @@ fun HeroTrendingPager(
                                 Brush.verticalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        Color.Black.copy(alpha = 0.85f)
-                                    )
+                                        Color.Black.copy(alpha = 0.3f),
+                                        Color.Black.copy(alpha = 0.9f)
+                                    ),
+                                    startY = 50f
                                 )
                             )
                     )
 
+                    // Card Bottom Content
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -375,27 +417,59 @@ fun HeroTrendingPager(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Rating: ★ ${String.format("%.1f", movie.voteAverage)} • ${movie.displayReleaseDate.take(4)}",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 12.sp
+                                text = "★ ${String.format("%.1f", movie.voteAverage)} • ${movie.displayReleaseDate.take(4)}",
+                                color = Color(0xFFCBD5E1),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
                             )
                         }
 
+                        // Play Button Pill
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(42.dp)
                                 .clip(CircleShape)
-                                .background(TmdbCinematicTheme.PrimaryActionGradient),
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFFFF5252), Color(0xFFFF7A00))
+                                    )
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Play",
-                                tint = Color.White
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
+                }
+            }
+        }
+
+        // Pager Indicator Dots
+        if (movies.size > 1) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(movies.size.coerceAtMost(8)) { index ->
+                    val isSelected = pagerState.currentPage == index
+                    Box(
+                        modifier = Modifier
+                            .size(
+                                width = if (isSelected) 18.dp else 6.dp,
+                                height = 6.dp
+                            )
+                            .clip(CircleShape)
+                            .background(
+                                if (isSelected) Color(0xFFE50914) else Color.White.copy(alpha = 0.25f)
+                            )
+                    )
                 }
             }
         }
