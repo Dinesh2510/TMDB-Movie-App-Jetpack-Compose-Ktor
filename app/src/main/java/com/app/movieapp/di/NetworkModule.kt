@@ -1,6 +1,9 @@
 package com.app.movieapp.di
 
+import android.util.Log
+import com.app.movieapp.BuildConfig
 import com.app.movieapp.data.remote.ApiService
+import com.app.movieapp.utlis.Constants
 import com.app.movieapp.utlis.Constants.Companion.BASE_URL
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -10,7 +13,8 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.client.request.accept
+import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
@@ -22,13 +26,14 @@ val networkModule = module {
     // 1. Provide Ktor HttpClient
     single {
         HttpClient(OkHttp) {
-            // Base URL and default headers
+
             defaultRequest {
                 url(BASE_URL)
                 contentType(ContentType.Application.Json)
+              //  accept(ContentType.Application.Json)
+              //  header("Authorization", "Bearer ${Constants.API_KEY}")
             }
 
-            // JSON Content Negotiation (Replaces GsonConverterFactory)
             install(ContentNegotiation) {
                 json(
                     Json {
@@ -40,21 +45,39 @@ val networkModule = module {
                 )
             }
 
-            // Logging (Replaces HttpLoggingInterceptor)
+            // ---- Full logging: URL, method, headers, request + response body ----
             install(Logging) {
-                logger = Logger.SIMPLE
-                level = LogLevel.BODY
+                logger = object : Logger {
+                    override fun log(message: String) {
+                        // Logcat truncates lines >4000 chars, so chunk long bodies
+                        val chunkSize = 4000
+                        if (message.length > chunkSize) {
+                            var index = 0
+                            while (index < message.length) {
+                                val end = (index + chunkSize).coerceAtMost(message.length)
+                                Log.d("Ktor", message.substring(index, end))
+                                index = end
+                            }
+                        } else {
+                            Log.d("Ktor", message)
+                        }
+                    }
+                }
+                level = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+                sanitizeHeader { header -> header == "Authorization" }
             }
 
-            // Timeouts (Replaces OkHttpClient timeouts)
             install(HttpTimeout) {
                 requestTimeoutMillis = 40_000
                 connectTimeoutMillis = 40_000
                 socketTimeoutMillis = 40_000
             }
+
+            // Ensures logging can see the fully-negotiated response body,
+            // not a partially-consumed stream
+            expectSuccess = false
         }
     }
 
-    // 2. Provide ApiService (Ktor Api Service implementation)
     single { ApiService(client = get()) }
 }

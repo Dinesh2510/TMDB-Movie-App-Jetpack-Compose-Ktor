@@ -16,8 +16,7 @@ val localProperties = Properties().apply {
         file.inputStream().use { load(it) }
     }
 }
-val tmdbApiKey: String = localProperties.getProperty("TMDB_API_KEY") ?: ""
-
+val tmdbReadAccessToken: String = localProperties.getProperty("TMDB_READ_ACCESS_TOKEN") ?: ""
 android {
     namespace = "com.app.movieapp"
     compileSdk = 36
@@ -42,15 +41,13 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
+            buildConfigField("String", "TMDB_READ_ACCESS_TOKEN", "\"$tmdbReadAccessToken\"")
             isDebuggable = true
         }
-
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
-            buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
-
+            buildConfigField("String", "TMDB_READ_ACCESS_TOKEN", "\"$tmdbReadAccessToken\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
