@@ -68,13 +68,6 @@ import com.app.movieapp.graph.Graph
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.ui.theme.FrostedGlassTheme
 
-// --- DATA MODELS & ROUTES ---
-data class TmdbMovie(
-    val id: Int,
-    val title: String,
-    val rating: String,
-    val posterUrl: String
-)
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Filled.Home)
@@ -263,7 +256,7 @@ fun MainAppScreen(
                 TmdbHomeScreen(navController =rootNavController )
             }
             composable(Screen.Movies.route) {
-                MovieGridScreen("Movies")
+                TopRatedScreen(rootNavController)
             }
             composable(Screen.Saved.route) {
                 SavedMovieScreen(navController = rootNavController)
@@ -287,107 +280,6 @@ fun MainAppScreen(
                 )
             }
         }
-    }
-}
-
-// --- MOVIE GRID SCREEN ---
-@Composable
-fun MovieGridScreen(title: String) {
-    val moviesList = remember(title) {
-        List(20) { index ->
-            TmdbMovie(
-                id = index + 1,
-                title = when (index % 4) {
-                    0 -> "Dune: Part Two"
-                    1 -> "Oppenheimer"
-                    2 -> "The Batman"
-                    else -> "Spider-Man: No Way Home"
-                },
-                rating = "★ ${8 + (index % 2)}.${index % 9}",
-                posterUrl = "https://picsum.photos/seed/tmdb_${index + 1}/300/450"
-            )
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(FrostedGlassTheme.ScreenBgGradient)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            Spacer(modifier = Modifier.height(48.dp))
-            Text(
-                text = title,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 120.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(moviesList, key = { it.id }) { movie ->
-                    MovieGridCard(movie = movie)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun MovieGridCard(movie: TmdbMovie) {
-    Column {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(0.7f),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                AsyncImage(
-                    model = movie.posterUrl,
-                    contentDescription = movie.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Rating Badge
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.65f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = movie.rating,
-                        color = Color(0xFFFFD700),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = movie.title,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1
-        )
     }
 }
 

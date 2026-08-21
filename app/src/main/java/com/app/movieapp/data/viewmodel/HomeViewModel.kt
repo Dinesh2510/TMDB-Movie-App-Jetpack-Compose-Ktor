@@ -12,6 +12,7 @@ import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.data.repository.HomeRepository
 import com.app.movieapp.models.Movies
 import com.app.movieapp.utlis.NetworkUtils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -23,6 +24,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import java.io.IOException
+import java.net.UnknownHostException
 
 // Unified UI State for single-pass Home Feed loading
 sealed interface HomeFeedUIState {
@@ -72,28 +76,36 @@ class HomeViewModel(private val repository: HomeRepository) : ViewModel() {
     }
 
     /**
-     * Parallel execution of all home API requests using async/awaitAll.
-     * Guarantees a single loading state pass without redundant re-triggers.
+     * Parallel execution protected by supervisorScope to prevent unhandled network crashes.
      */
     fun fetchAllHomeData() {
         viewModelScope.launch(Dispatchers.IO) {
             _homeFeedState.value = HomeFeedUIState.Loading
-            try {
-                val discoverDeferred = async { repository.getDiscoverMoviesRepo().first() }
-                val trendingDeferred = async { repository.getTrendingMoviesRepo().first() }
-                val nowPlayingDeferred = async { repository.getNowPlayingMoviesRepo().first() }
-                val upcomingDeferred = async { repository.getUpcomingMoviesRepo().first() }
-                val genresDeferred = async { repository.getMovieGenresRepo().first() }
-                val trendingAllDeferred = async { repository.getTrendingAllRepo().first() }
 
-                _homeFeedState.value = HomeFeedUIState.Success(
-                    discoverMovies = discoverDeferred.await(),
-                    trendingMovies = trendingDeferred.await(),
-                    nowPlayingMovies = nowPlayingDeferred.await(),
-                    upcomingMovies = upcomingDeferred.await(),
-                    genres = genresDeferred.await(),
-                    trendingAll = trendingAllDeferred.await()
-                )
+            try {
+                supervisorScope {
+                    val discoverDeferred = async { repository.getDiscoverMoviesRepo().first() }
+                    val trendingDeferred = async { repository.getTrendingMoviesRepo().first() }
+                    val nowPlayingDeferred = async { repository.getNowPlayingMoviesRepo().first() }
+                    val upcomingDeferred = async { repository.getUpcomingMoviesRepo().first() }
+                    val genresDeferred = async { repository.getMovieGenresRepo().first() }
+                    val trendingAllDeferred = async { repository.getTrendingAllRepo().first() }
+
+                    _homeFeedState.value = HomeFeedUIState.Success(
+                        discoverMovies = discoverDeferred.await(),
+                        trendingMovies = trendingDeferred.await(),
+                        nowPlayingMovies = nowPlayingDeferred.await(),
+                        upcomingMovies = upcomingDeferred.await(),
+                        genres = genresDeferred.await(),
+                        trendingAll = trendingAllDeferred.await()
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e // Essential for proper coroutine lifecycle cancellation
+            } catch (e: UnknownHostException) {
+                _homeFeedState.value = HomeFeedUIState.Error("No internet connection. Please check your network and try again.")
+            } catch (e: IOException) {
+                _homeFeedState.value = HomeFeedUIState.Error("Network error occurred. Please verify your connection.")
             } catch (e: Exception) {
                 _homeFeedState.value = HomeFeedUIState.Error(e.localizedMessage ?: "Failed to load feed. Please try again.")
             }

@@ -14,7 +14,7 @@ class Constants {
         const val popularAllListScreen = "popularAllListScreen"
         const val discoverListScreen = "DiscoverListScreen"
         const val upcomingListScreen = "upcomingListScreen"
-        const val similarListScreen = "similarListing"
-        const val genreWiseMovie = "genreWiseMovie"
+        const val topRatedMovies = "topratedmovies"
+        const val topRatedTv = "topratedtv"
     }
 }

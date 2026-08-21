@@ -90,6 +90,7 @@ import kotlinx.coroutines.delay
 
 import androidx.compose.material.icons.filled.Close
 import com.app.movieapp.data.local.ContinueWatchingModel
+import com.app.movieapp.screens.Componets.CinematicErrorState
 import com.app.movieapp.utlis.netflixFamily
 @Composable
 fun TmdbHomeScreen(
@@ -114,32 +115,10 @@ fun TmdbHomeScreen(
                     CenteredCircularProgressIndicator()
                 }
             }
-            is HomeFeedUIState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = state.message,
-                            color = TmdbCinematicTheme.TextSecondary,
-                            fontSize = 14.sp
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(TmdbCinematicTheme.PrimaryActionGradient)
-                                .clickable { viewModel.fetchAllHomeData() }
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Text("Retry", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
+            is HomeFeedUIState.Error -> {CinematicErrorState(
+                errorMessage = state.message,
+                onRetryClick = { viewModel.fetchAllHomeData() }
+            )}
             is HomeFeedUIState.Success -> {
                 val discoverMovies = state.discoverMovies?.results ?: emptyList()
                 val trendingAllMovies = state.trendingAll?.results?.take(10) ?: emptyList()

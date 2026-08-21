@@ -8,7 +8,6 @@ import com.app.movieapp.R
 import com.app.movieapp.data.remote.ApiService
 import com.app.movieapp.models.Movies
 import com.app.movieapp.utlis.Constants.Companion.discoverListScreen
-import com.app.movieapp.utlis.Constants.Companion.genreWiseMovie
 import com.app.movieapp.utlis.Constants.Companion.nowPlayingAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.popularAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.upcomingListScreen
