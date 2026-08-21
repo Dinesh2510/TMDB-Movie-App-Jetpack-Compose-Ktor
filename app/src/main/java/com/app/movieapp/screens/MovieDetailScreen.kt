@@ -62,6 +62,7 @@ import com.app.movieapp.R
 import com.app.movieapp.data.local.WatchListModel
 import com.app.movieapp.data.remote.response.MovieDetailsDTO
 import com.app.movieapp.data.remote.response.MovieResponse
+import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.MovieDetailsViewModel
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
@@ -83,7 +84,8 @@ fun MovieDetailsScreen(
     navController: NavHostController,
     movieId: String,
     viewModel: MovieDetailsViewModel = koinViewModel(),
-    watchListViewModel: WatchListViewModel = koinViewModel()
+    watchListViewModel: WatchListViewModel = koinViewModel(),
+    continueWatchingViewModel: ContinueWatchingViewModel = koinViewModel()
 ) {
     val detailsMovieState by viewModel.detailsMovieResponses.collectAsState()
     val castMovieState by viewModel.castMovieResponses.collectAsState()
@@ -110,7 +112,12 @@ fun MovieDetailsScreen(
                 is MovieState.Success -> {
                     val moviesInfo = (detailsMovieState as MovieState.Success<MovieDetailsDTO?>).data
                     if (moviesInfo != null) {
-                        DisplayMovieData(moviesInfo, navController, watchListViewModel)
+                        DisplayMovieData(
+                            moviesInfo = moviesInfo,
+                            navController = navController,
+                            watchListViewModel = watchListViewModel,
+                            continueWatchingViewModel = continueWatchingViewModel
+                        )
                     }
                 }
                 is MovieState.Error -> {
@@ -201,7 +208,8 @@ fun MovieDetailsScreen(
 fun DisplayMovieData(
     moviesInfo: MovieDetailsDTO,
     navController: NavHostController,
-    watchListViewModel: WatchListViewModel
+    watchListViewModel: WatchListViewModel,
+    continueWatchingViewModel: ContinueWatchingViewModel
 ) {
     LaunchedEffect(moviesInfo.id) {
         watchListViewModel.exist(moviesInfo.id)
@@ -210,7 +218,6 @@ fun DisplayMovieData(
     val context = LocalContext.current
     val date = SimpleDateFormat.getDateInstance().format(Date())
 
-// Format genres into a readable comma-separated string
     val formattedGenres = moviesInfo.genres.joinToString(", ") { it.name }
 
     val myListMovie = WatchListModel(
@@ -427,6 +434,17 @@ fun DisplayMovieData(
                         )
                     )
                     .clickable {
+                        val runtimeMs = (moviesInfo.runtime ?: 120) * 60 * 1000L
+                        continueWatchingViewModel.saveProgress(
+                            mediaId = moviesInfo.id,
+                            title = moviesInfo.title,
+                            posterPath = moviesInfo.posterPath,
+                            backdropPath = moviesInfo.backdropPath,
+                            currentPositionMs = (runtimeMs * 0.25).toLong(),
+                            totalDurationMs = runtimeMs,
+                            releaseDate = moviesInfo.releaseDate,
+                            rating = moviesInfo.voteAverage
+                        )
                         Toast.makeText(context, "Streaming ${moviesInfo.title}", Toast.LENGTH_SHORT).show()
                     },
                 contentAlignment = Alignment.Center
@@ -467,7 +485,6 @@ fun CastMediaSection(castList: List<Cast>) {
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
-
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -595,7 +612,8 @@ fun MovieDetailsPreview() {
         DisplayMovieData(
             moviesInfo = dummyMovie,
             navController = rememberNavController(),
-            watchListViewModel = koinViewModel()
+            watchListViewModel = koinViewModel(),
+            continueWatchingViewModel = koinViewModel()
         )
     }
 }

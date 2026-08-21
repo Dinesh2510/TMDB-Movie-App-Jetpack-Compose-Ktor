@@ -48,18 +48,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.app.movieapp.data.viewmodel.AuthViewModel
+import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
+import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import org.koin.androidx.compose.koinViewModel
-import com.app.movieapp.data.viewmodel.AuthViewModel
 
 @Composable
 fun ProfileScreen(
     authViewModel: AuthViewModel = koinViewModel(),
+    watchListViewModel: WatchListViewModel = koinViewModel(),
+    continueWatchingViewModel: ContinueWatchingViewModel = koinViewModel(),
     onWatchlistClick: () -> Unit = {},
     onLogoutClick: () -> Unit
 ) {
-    // Collect StateFlow safely from ViewModel
+    // Collect StateFlow safely from ViewModels
     val userName by authViewModel.userName.collectAsState()
+    val watchlistData by watchListViewModel.myMovieData.value.collectAsState(initial = emptyList())
+    val continueWatchingData by continueWatchingViewModel.continueWatchingList.collectAsState()
 
     // State manager to show sub-sections within the profile screen
     var activeSection by remember { mutableStateOf<ProfileSection?>(null) }
@@ -177,14 +183,28 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // STATS ROW
+            // STATS ROW (DYNAMIC COUNTS)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ProfileStatCard(title = "Watchlist", value = "24", modifier = Modifier.weight(1f))
-                ProfileStatCard(title = "Watched", value = "142", modifier = Modifier.weight(1f))
-                ProfileStatCard(title = "Reviews", value = "8", modifier = Modifier.weight(1f))
+                ProfileStatCard(
+                    title = "Watchlist",
+                    value = watchlistData.size.toString(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onWatchlistClick() }
+                )
+                ProfileStatCard(
+                    title = "Watching",
+                    value = continueWatchingData.size.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+                ProfileStatCard(
+                    title = "Reviews",
+                    value = "0",
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
