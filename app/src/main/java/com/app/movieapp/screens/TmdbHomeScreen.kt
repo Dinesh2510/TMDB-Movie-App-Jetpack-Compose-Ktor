@@ -135,7 +135,7 @@ fun TmdbHomeScreen(
                     // 1. Home Header
                     item {
                         HomeHeader(
-                            onSearchClick = { navController.navigate(MovieAppScreen.MOVIE_SEARCH.route) }
+                            onSearchClick = { navController.navigate(MovieAppScreen.MOVIE_AI.route) }
                         )
                     }
 

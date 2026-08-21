@@ -1,5 +1,6 @@
 package com.app.movieapp.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,10 +12,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -24,10 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.app.movieapp.R
 import com.app.movieapp.data.viewmodel.AuthViewModel
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import org.koin.androidx.compose.koinViewModel
@@ -42,21 +49,25 @@ fun OnboardingScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(TmdbCinematicTheme.AppBackgroundGradient)
+            .statusBarsPadding()
+            .navigationBarsPadding() // Prevents overlapping the system navigation bar
             .padding(horizontal = 24.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 32.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // TOP IMAGE CARD
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(0.82f)
-                    .height(340.dp)
+                    .fillMaxWidth(0.85f)
+                    .height(320.dp)
                     .shadow(
                         elevation = 28.dp,
                         shape = RoundedCornerShape(32.dp),
@@ -73,40 +84,18 @@ fun OnboardingScreen(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "THE TMDB APP\nPREVIEW",
-                        color = TmdbCinematicTheme.TextSecondary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                    Image(
+                        painter = painterResource(id = R.drawable.onboard),
+                        contentDescription = "Onboard Illustration",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 24.dp, height = 8.dp)
-                        .clip(CircleShape)
-                        .background(TmdbCinematicTheme.CoralAccent)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.3f))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.3f))
-                )
-            }
+            Spacer(modifier = Modifier.height(20.dp))
 
+            // TITLE & DESCRIPTION
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Stream your favorite\nmovies anytime,\nanywhere.",
@@ -129,6 +118,9 @@ fun OnboardingScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // BOTTOM ACTIONS
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -140,7 +132,6 @@ fun OnboardingScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .background(TmdbCinematicTheme.PrimaryActionGradient)
                         .clickable {
-                            viewModel.completeOnboarding()
                             onCreateAccountClick()
                         },
                     contentAlignment = Alignment.Center
@@ -167,7 +158,6 @@ fun OnboardingScreen(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable {
-                            viewModel.completeOnboarding()
                             onLoginClick()
                         }
                     )
@@ -175,4 +165,14 @@ fun OnboardingScreen(
             }
         }
     }
+}
+
+// --- COMPOSE PREVIEW ---
+@Preview(showBackground = true, widthDp = 412, heightDp = 850)
+@Composable
+fun OnboardingScreenPreview() {
+    OnboardingScreen(
+        onCreateAccountClick = {},
+        onLoginClick = {}
+    )
 }
