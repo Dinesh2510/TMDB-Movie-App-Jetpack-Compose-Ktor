@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.app.movieapp.data.viewmodel.AuthViewModel
 import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.WatchListViewModel
+import com.app.movieapp.screens.Componets.CinematicDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -67,7 +68,8 @@ fun ProfileScreen(
     val watchlistData by watchListViewModel.myMovieData.value.collectAsState(initial = emptyList())
     val continueWatchingData by continueWatchingViewModel.continueWatchingList.collectAsState()
 
-    // State manager to show sub-sections within the profile screen
+    // State manager for logout dialog and sub-sections
+    var showLogoutDialog by remember { mutableStateOf(false) }
     var activeSection by remember { mutableStateOf<ProfileSection?>(null) }
 
     // RENDER SUB-SECTION IF SELECTED
@@ -79,6 +81,25 @@ fun ProfileScreen(
         )
         return
     }
+
+    // LOGOUT CONFIRMATION DIALOG
+    CinematicDialog(
+        showDialog = showLogoutDialog,
+        title = "Log Out?",
+        message = "Are you sure you want to log out of your account?",
+        positiveButtonText = "Log Out",
+        negativeButtonText = "Cancel",
+        icon = Icons.AutoMirrored.Filled.Logout,
+        onPositiveClick = {
+            showLogoutDialog = false
+            authViewModel.logout {
+                onLogoutClick()
+            }
+        },
+        onDismissRequest = {
+            showLogoutDialog = false
+        }
+    )
 
     // MAIN PROFILE VIEW
     Box(
@@ -272,7 +293,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // LOGOUT BUTTON
+            // LOGOUT BUTTON (TRIGGERS DIALOG)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -281,9 +302,7 @@ fun ProfileScreen(
                     .background(Color(0xFF2C151B))
                     .border(1.dp, TmdbCinematicTheme.CoralAccent.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                     .clickable {
-                        authViewModel.logout {
-                            onLogoutClick()
-                        }
+                        showLogoutDialog = true
                     },
                 contentAlignment = Alignment.Center
             ) {

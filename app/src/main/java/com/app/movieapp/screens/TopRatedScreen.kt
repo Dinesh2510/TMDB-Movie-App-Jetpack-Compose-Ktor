@@ -59,12 +59,16 @@ import com.app.movieapp.data.viewmodel.ContentType
 import com.app.movieapp.data.viewmodel.TopRatedViewModel
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Movies
+import com.app.movieapp.screens.Componets.CinematicErrorState
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_BACKDROP_IMAGE_URL
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import org.koin.androidx.compose.koinViewModel
-
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 @Composable
 fun TopRatedScreen(
     navController: NavController,
@@ -75,6 +79,7 @@ fun TopRatedScreen(
     val moviePagingItems = viewModel.topRatedMoviesPagingFlow.collectAsLazyPagingItems()
 
     val currentItems = if (selectedTab == ContentType.TV_SHOWS) tvPagingItems else moviePagingItems
+    val refreshState = currentItems.loadState.refresh
 
     Box(
         modifier = Modifier
@@ -82,7 +87,7 @@ fun TopRatedScreen(
             .background(TmdbCinematicTheme.AppBackgroundGradient)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            
+
             // 1. Top Toggle Pills Bar
             Spacer(modifier = Modifier.height(44.dp))
             SegmentedTabBar(
@@ -90,61 +95,104 @@ fun TopRatedScreen(
                 onTabSelected = { viewModel.selectTab(it) }
             )
 
-            // 2. Paginated Grid with Hostar Banner Header
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Hostar Hero Slider Carousel (Full Span)
-                if (currentItems.itemCount >= 5) {
-                    item(span = { GridItemSpan(2) }) {
-                        val heroMovies = (0..4).mapNotNull { currentItems[it] }
-                        HostarHeroSlider(
-                            movies = heroMovies,
-                            onMovieClick = { id ->
-                                navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$id")
-                            }
-                        )
-                    }
-                }
-
-                // Section Header Title (Full Span)
-                item(span = { GridItemSpan(2) }) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+            // 2. Main Content / Loader / Error State
+            when {
+                // Initial Loading State
+                refreshState is androidx.paging.LoadState.Loading && currentItems.itemCount == 0 -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (selectedTab == ContentType.TV_SHOWS) "🔥 Popular TV Shows" else "🔥 Top Movies",
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                        Text(
-                            text = "${currentItems.itemCount} Items",
-                            color = TmdbCinematicTheme.CoralAccent,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        CenteredCircularProgressIndicator()
                     }
                 }
 
-                // Grid Items
-                items(
-                    count = currentItems.itemCount,
-                    key = { index -> "${currentItems[index]?.id}_$index" }
-                ) { index ->
-                    currentItems[index]?.let { movie ->
-                        TopRatedGridCard(
-                            movie = movie,
-                            onMovieClick = {
-                                navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                // Initial Error State (e.g. Offline)
+                refreshState is androidx.paging.LoadState.Error -> {
+                    val error = (refreshState as androidx.paging.LoadState.Error).error
+                    val errorRes = when (error) {
+                        is java.net.UnknownHostException -> com.app.movieapp.R.string.error_no_internet
+                        is java.io.IOException -> com.app.movieapp.R.string.error_network_communication
+                        else -> com.app.movieapp.R.string.error_unknown
+                    }
+                   CinematicErrorState(
+                        errorMessage = androidx.compose.ui.res.stringResource(id = errorRes),
+                        onRetryClick = { currentItems.retry() }
+                    )
+                }
+
+                // Paginated Grid
+                else -> {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // Hostar Hero Slider Carousel (Full Span)
+                        if (currentItems.itemCount >= 5) {
+                            item(span = { GridItemSpan(2) }) {
+                                val heroMovies = (0..4).mapNotNull { currentItems[it] }
+                                HostarHeroSlider(
+                                    movies = heroMovies,
+                                    onMovieClick = { id ->
+                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$id")
+                                    }
+                                )
                             }
-                        )
+                        }
+
+                        // Section Header Title (Full Span)
+                        item(span = { GridItemSpan(2) }) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = if (selectedTab == ContentType.TV_SHOWS) "🔥 Popular TV Shows" else "🔥 Top Movies",
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                                Text(
+                                    text = "${currentItems.itemCount} Items",
+                                    color = TmdbCinematicTheme.CoralAccent,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Grid Items
+                        items(
+                            count = currentItems.itemCount,
+                            key = { index -> "${currentItems[index]?.id}_$index" }
+                        ) { index ->
+                            currentItems[index]?.let { movie ->
+                                TopRatedGridCard(
+                                    movie = movie,
+                                    onMovieClick = {
+                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                    }
+                                )
+                            }
+                        }
+
+                        // Bottom Pagination Loader (when scrolling down)
+                        if (currentItems.loadState.append is androidx.paging.LoadState.Loading) {
+                            item(span = { GridItemSpan(2) }) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CenteredCircularProgressIndicator()
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -252,16 +300,61 @@ private fun HostarHeroSlider(
     movies: List<Movies>,
     onMovieClick: (Int) -> Unit
 ) {
+    if (movies.isEmpty()) return
+
     val pagerState = rememberPagerState(pageCount = { movies.size })
+    val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+
+    // Smooth auto-scroll loop
+    LaunchedEffect(isDragged, movies.size) {
+        if (!isDragged && movies.size > 1) {
+            while (true) {
+                delay(3500L)
+                val nextPage = (pagerState.currentPage + 1) % movies.size
+                pagerState.animateScrollToPage(
+                    page = nextPage,
+                    animationSpec = tween(durationMillis = 800)
+                )
+            }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-        Text(
-            text = "For You",
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "For You",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black
+            )
+
+            // Dynamic Dot Indicators
+            if (movies.size > 1) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(movies.size) { index ->
+                        val isSelected = pagerState.currentPage == index
+                        Box(
+                            modifier = Modifier
+                                .size(
+                                    width = if (isSelected) 16.dp else 6.dp,
+                                    height = 6.dp
+                                )
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) TmdbCinematicTheme.CoralAccent else Color.White.copy(alpha = 0.3f)
+                                )
+                        )
+                    }
+                }
+            }
+        }
 
         HorizontalPager(
             state = pagerState,

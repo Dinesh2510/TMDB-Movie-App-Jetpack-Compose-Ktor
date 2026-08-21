@@ -3,10 +3,12 @@ package com.app.movieapp.data.viewmodel
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.app.movieapp.R
 import com.app.movieapp.data.remote.response.GenreResponse
 import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.data.repository.HomeRepository
@@ -39,7 +41,7 @@ sealed interface HomeFeedUIState {
         val genres: GenreResponse?,
         val trendingAll: MovieResponse?
     ) : HomeFeedUIState
-    data class Error(val message: String) : HomeFeedUIState
+    data class Error(@StringRes val messageRes: Int) : HomeFeedUIState // Change String -> Int
 }
 
 class HomeViewModel(private val repository: HomeRepository) : ViewModel() {
@@ -103,11 +105,11 @@ class HomeViewModel(private val repository: HomeRepository) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e // Essential for proper coroutine lifecycle cancellation
             } catch (e: UnknownHostException) {
-                _homeFeedState.value = HomeFeedUIState.Error("No internet connection. Please check your network and try again.")
+                _homeFeedState.value = HomeFeedUIState.Error(R.string.error_no_internet)
             } catch (e: IOException) {
-                _homeFeedState.value = HomeFeedUIState.Error("Network error occurred. Please verify your connection.")
+                _homeFeedState.value = HomeFeedUIState.Error(R.string.error_network_communication)
             } catch (e: Exception) {
-                _homeFeedState.value = HomeFeedUIState.Error(e.localizedMessage ?: "Failed to load feed. Please try again.")
+                _homeFeedState.value = HomeFeedUIState.Error(R.string.error_unknown)
             }
         }
     }

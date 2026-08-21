@@ -228,27 +228,3 @@ fun CinematicDialogPreview() {
         )
     }
 }
-/*
-
-var showDeleteDialog by remember { mutableStateOf(false) }
-
-// Trigger button
-IconButton(onClick = { showDeleteDialog = true }) {
-    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
-}
-
-// Dialog Instance
-CinematicDialog(
-showDialog = showDeleteDialog,
-title = "Clear Watchlist?",
-message = "Are you sure you want to remove all saved movies? This action cannot be undone.",
-positiveButtonText = "Clear All",
-negativeButtonText = "Keep Items",
-icon = Icons.Default.DeleteSweep,
-onPositiveClick = {
-    viewModel.clearWatchlist()
-},
-onDismissRequest = {
-    showDeleteDialog = false
-}
-)*/

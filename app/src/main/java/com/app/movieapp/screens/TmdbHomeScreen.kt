@@ -89,6 +89,7 @@ import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import kotlinx.coroutines.delay
 
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.res.stringResource
 import com.app.movieapp.data.local.ContinueWatchingModel
 import com.app.movieapp.screens.Componets.CinematicErrorState
 import com.app.movieapp.utlis.netflixFamily
@@ -116,7 +117,7 @@ fun TmdbHomeScreen(
                 }
             }
             is HomeFeedUIState.Error -> {CinematicErrorState(
-                errorMessage = state.message,
+                errorMessage = stringResource(id = state.messageRes),
                 onRetryClick = { viewModel.fetchAllHomeData() }
             )}
             is HomeFeedUIState.Success -> {
@@ -489,7 +490,7 @@ fun HeroTrendingPager(
                             )
                             .clip(CircleShape)
                             .background(
-                                if (isSelected) Color(0xFFE50914) else Color.White.copy(alpha = 0.25f)
+                                if (isSelected) TmdbCinematicTheme.CoralAccent else Color.White.copy(alpha = 0.25f)
                             )
                     )
                 }
@@ -1078,8 +1079,8 @@ fun ContinueWatchingCard(
 
     Card(
         modifier = Modifier
-            .width(230.dp)
-            .height(145.dp)
+            .width(240.dp)
+            .height(135.dp)
             .clip(cardShape)
             .clickable { onCardClick() },
         shape = cardShape,
@@ -1172,7 +1173,7 @@ fun ContinueWatchingCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "${item.remainingMinutes}m left",
-                        color = Color(0xFFE50914),
+                        color =TmdbCinematicTheme.CoralAccent,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -1186,7 +1187,7 @@ fun ContinueWatchingCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp),
-                    color = Color(0xFFE50914),
+                    color = TmdbCinematicTheme.CoralAccent,
                     trackColor = Color.White.copy(alpha = 0.2f),
                     strokeCap = StrokeCap.Round
                 )

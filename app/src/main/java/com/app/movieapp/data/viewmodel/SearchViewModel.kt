@@ -9,37 +9,41 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import com.app.movieapp.data.repository.SearchRepository
 import com.app.movieapp.models.Search
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 
 class SearchViewModel(
     private val searchRepository: SearchRepository
 ) : ViewModel() {
 
-    private val _multiSearch = mutableStateOf<Flow<PagingData<Search>>>(emptyFlow())
-    val multiSearchState: State<Flow<PagingData<Search>>> = _multiSearch
+    private val _searchQuery = MutableStateFlow("Jack Reacher")
+    val searchQuery = _searchQuery.asStateFlow()
 
-    var searchParam = mutableStateOf("")
-
-    init {
-        searchParam.value = "Jack Reacher"
-        searchRemoteMovie(includeAdult = true)
-    }
-
-    fun searchRemoteMovie(includeAdult: Boolean) {
-        viewModelScope.launch {
-            if (searchParam.value.isNotBlank()) {
-                _multiSearch.value = searchRepository.multiSearch(
-                    searchParams = searchParam.value,
-                    includeAdult = includeAdult
-                ).map { pagingData ->
-                    pagingData.filter { item ->
-                        item.title != null || item.originalName != null
-                    }
-                }.cachedIn(viewModelScope)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchPagingFlow: Flow<PagingData<Search>> = _searchQuery
+        .filter { it.isNotBlank() }
+        .distinctUntilChanged()
+        .flatMapLatest { query ->
+            searchRepository.multiSearch(
+                searchParams = query,
+                includeAdult = true
+            ).map { pagingData ->
+                pagingData.filter { item ->
+                    item.title != null || item.originalName != null
+                }
             }
+        }
+        .cachedIn(viewModelScope)
+
+    fun onSearchQueryChanged(newQuery: String) {
+        if (newQuery.isNotBlank()) {
+            _searchQuery.value = newQuery
         }
     }
 }
