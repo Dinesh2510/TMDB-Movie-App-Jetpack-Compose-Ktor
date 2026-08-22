@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.app.movieapp.data.viewmodel.AuthViewModel
+import com.app.movieapp.screens.AiMovieChatScreen
 import com.app.movieapp.screens.GenreWiseMoviesScreen
 import com.app.movieapp.screens.LoginScreen
 import com.app.movieapp.screens.MainAppScreen
@@ -151,6 +152,10 @@ fun RootNavigation(
             SearchScreen(navController = navController)
         }
 
+        composable(route = MovieAppScreen.MOVIE_AI.route) {
+            AiMovieChatScreen(navController = navController)
+        }
+
         composable(route = MovieAppScreen.MOVIE_WATCHLIST.route) {
             SavedMovieScreen(navController = navController)
         }
@@ -178,6 +183,7 @@ sealed class MovieAppScreen(val route: String) {
     object MOVIE_SEARCH : MovieAppScreen(route = "search")
     object MOVIE_ABOUT : MovieAppScreen(route = "about")
     object MOVIE_WATCHLIST : MovieAppScreen(route = "watch")
+    object MOVIE_AI : MovieAppScreen(route = "movieAI")
 }
 
 object Graph {

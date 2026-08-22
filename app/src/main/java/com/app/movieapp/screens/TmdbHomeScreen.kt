@@ -84,6 +84,7 @@ import kotlin.random.Random
 import androidx.compose.animation.core.tween
 
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.runtime.LaunchedEffect
 import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import kotlinx.coroutines.delay
@@ -329,7 +330,7 @@ fun HomeHeader(onSearchClick: () -> Unit) {
                 .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, CircleShape)
         ) {
             Icon(
-                imageVector = Icons.Default.Search,
+                imageVector = Icons.Default.AutoAwesome,
                 contentDescription = "Search",
                 tint = TmdbCinematicTheme.TextPrimary,
                 modifier = Modifier.size(20.dp)

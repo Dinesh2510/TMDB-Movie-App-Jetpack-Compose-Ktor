@@ -22,6 +22,7 @@
  */
 package com.app.movieapp.di
 
+import com.app.movieapp.data.viewmodel.AiChatViewModel
 import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.HomeViewModel
 import com.app.movieapp.data.viewmodel.MovieDetailsViewModel
@@ -38,4 +39,6 @@ val viewModelModule = module {
     viewModelOf(::WatchListViewModel)
     viewModelOf(::ContinueWatchingViewModel) // Added
     viewModelOf (::TopRatedViewModel)
+    viewModelOf (::AiChatViewModel)
+
 }
