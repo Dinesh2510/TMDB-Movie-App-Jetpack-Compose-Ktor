@@ -1,0 +1,6 @@
+<component name="CopyrightManager">
+  <copyright>
+    <option name="notice" value="Copyright (c) &amp;#36;today.year Dinesh2510&#10;File : &amp;#36;file.fileName&#10;Project : &amp;#36;project.name&#10;Module : &amp;#36;module.name&#10;Created on : &amp;#36;today.format(&quot;yyyy-MM-dd HH:mm&quot;)&#10;Last modified: &amp;#36;file.lastModified.format(&quot;yyyy-MM-dd HH:mm&quot;)&#10;&#10;Author : Dinesh&#10;GitHub : https://github.com/Dinesh2510&#10;YouTube : https://www.youtube.com/@pixeldesigndeveloper&#10;Website : https://pixeldev.in&#10;&#10;Copyright (c) &amp;#36;originalComment.match(&quot;Copyright &#10;&#10; (\d+)&quot;, 1, &quot;-&quot;, &quot;&amp;#36;today.year&quot;)&amp;#36;today.year Dinesh. All Rights Reserved.&#10;Licensed under the Apache License, Version 2.0&#10;&#10;https://www.apache.org/licenses/LICENSE-2.0" />
+    <option name="myName" value="Github Rights" />
+  </copyright>
+</component>
