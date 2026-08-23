@@ -74,9 +74,9 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.app.movieapp.R
 import com.app.movieapp.data.viewmodel.SearchViewModel
 import com.app.movieapp.graph.MovieAppScreen
-import com.app.movieapp.screens.Componets.CinematicErrorState
-import com.app.movieapp.screens.Componets.ErrorStrip
-import com.app.movieapp.screens.Componets.SearchMovieCard
+import com.app.movieapp.screens.componets.CinematicErrorState
+import com.app.movieapp.screens.componets.ErrorStrip
+import com.app.movieapp.screens.componets.SearchMovieCard
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL

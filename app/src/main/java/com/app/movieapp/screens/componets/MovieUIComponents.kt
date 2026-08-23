@@ -17,7 +17,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.app.movieapp.screens.Componets
+package com.app.movieapp.screens.componets
 
 import android.os.Bundle
 import android.util.Log
@@ -62,7 +62,6 @@ import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,7 +76,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -89,7 +87,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
@@ -98,7 +95,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Scale
 import coil3.size.Size
-import coil3.toBitmap
 import com.app.movieapp.R
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Movies
@@ -109,7 +105,6 @@ import com.app.movieapp.utlis.netflixFamily
 import androidx.compose.foundation.layout.fillMaxHeight
 
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Surface
 

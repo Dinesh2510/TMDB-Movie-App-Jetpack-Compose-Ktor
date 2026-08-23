@@ -17,7 +17,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.app.movieapp.screens.Componets
+package com.app.movieapp.screens.componets
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape

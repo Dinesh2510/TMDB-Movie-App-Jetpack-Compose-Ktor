@@ -43,13 +43,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwipeLeft
-import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,10 +77,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
-import com.app.movieapp.screens.Componets.SavedMovieCard
-import com.app.movieapp.screens.Componets.SearchMovieCard
+import com.app.movieapp.screens.componets.SavedMovieCard
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
-import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

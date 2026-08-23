@@ -53,7 +53,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
@@ -111,7 +110,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.res.stringResource
 import com.app.movieapp.data.local.ContinueWatchingModel
-import com.app.movieapp.screens.Componets.CinematicErrorState
+import com.app.movieapp.screens.componets.CinematicErrorState
 import com.app.movieapp.utlis.netflixFamily
 @Composable
 fun TmdbHomeScreen(

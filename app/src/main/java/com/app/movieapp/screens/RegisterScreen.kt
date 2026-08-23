@@ -46,7 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.movieapp.data.viewmodel.AuthViewModel
-import com.app.movieapp.screens.Componets.CinematicTextField
+import com.app.movieapp.screens.componets.CinematicTextField
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import org.koin.androidx.compose.koinViewModel
 
