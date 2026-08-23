@@ -32,7 +32,6 @@ import com.app.movieapp.screens.GenreWiseMoviesScreen
 import com.app.movieapp.screens.MainAppScreen
 import com.app.movieapp.screens.MovieDetailsScreen
 import com.app.movieapp.screens.SavedMovieScreen
-import com.app.movieapp.screens.ScreenAbout
 import com.app.movieapp.screens.SearchScreen
 import com.app.movieapp.screens.SeeAllScreen
 import com.app.movieapp.screens.SplashScreen
@@ -47,12 +46,10 @@ import com.app.movieapp.screens.GenreWiseMoviesScreen
 import com.app.movieapp.screens.LoginScreen
 import com.app.movieapp.screens.MainAppScreen
 import com.app.movieapp.screens.MovieDetailsScreen
-import com.app.movieapp.screens.OldMovieHomeScreen
 import com.app.movieapp.screens.OnboardingScreen
 import com.app.movieapp.screens.ProfileScreen
 import com.app.movieapp.screens.RegisterScreen
 import com.app.movieapp.screens.SavedMovieScreen
-import com.app.movieapp.screens.ScreenAbout
 import com.app.movieapp.screens.SearchScreen
 import com.app.movieapp.screens.SeeAllScreen
 import com.app.movieapp.screens.SplashScreen
@@ -178,14 +175,9 @@ fun RootNavigation(
         composable(route = MovieAppScreen.MOVIE_WATCHLIST.route) {
             SavedMovieScreen(navController = navController)
         }
-// Inside RootNavigation.kt
+
         composable(route = MovieAppScreen.MOVIE_HOME.route) {
-            // Pass the root navController here!
-            //OldMovieHomeScreen( navController)
                    MainAppScreen(rootNavController = navController)
-        }
-        composable(route = MovieAppScreen.MOVIE_ABOUT.route) {
-            ScreenAbout()
         }
     }
 }

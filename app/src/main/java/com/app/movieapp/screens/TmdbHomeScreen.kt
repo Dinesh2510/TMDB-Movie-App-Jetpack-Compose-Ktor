@@ -110,8 +110,11 @@ import kotlinx.coroutines.delay
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.res.stringResource
 import com.app.movieapp.data.local.ContinueWatchingModel
-import com.app.movieapp.screens.componets.CinematicErrorState
+import com.app.movieapp.screens.components.CinematicErrorState
+import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.netflixFamily
+import com.app.movieapp.utlis.rememberHapticController
+
 @Composable
 fun TmdbHomeScreen(
     navController: NavController,
@@ -120,6 +123,7 @@ fun TmdbHomeScreen(
 ) {
     val homeState by viewModel.homeFeedState.collectAsState()
     val continueWatchingList by continueWatchingViewModel.continueWatchingList.collectAsState()
+    val haptics = rememberHapticController()
 
     Box(
         modifier = Modifier
@@ -154,7 +158,10 @@ fun TmdbHomeScreen(
                     // 1. Home Header
                     item {
                         HomeHeader(
-                            onSearchClick = { navController.navigate(MovieAppScreen.MOVIE_AI.route) }
+                            onSearchClick = { navController.navigate(MovieAppScreen.MOVIE_AI.route)
+                                haptics.trigger(AppHaptic.Click)
+
+                            }
                         )
                     }
 

@@ -17,7 +17,8 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.app.movieapp.screens.componets
+package com.app.movieapp.screens.components   // should be lowercase now
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable

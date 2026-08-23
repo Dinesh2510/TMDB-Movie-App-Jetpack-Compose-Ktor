@@ -3,8 +3,8 @@
  * File : MovieUIComponents.kt
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
- * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Created on : 2026-08-24 00:09
+ * Last modified: 2026-08-24 00:07
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -17,7 +17,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.app.movieapp.screens.componets
+package com.app.movieapp.screens.components
 
 import android.os.Bundle
 import android.util.Log
@@ -98,7 +98,6 @@ import coil3.size.Size
 import com.app.movieapp.R
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Movies
-import com.app.movieapp.utlis.Constants
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import com.app.movieapp.utlis.netflixFamily
 
@@ -137,7 +136,7 @@ fun HomeThumbWithTitle(
     ) {
         Column {
             AsyncImage(
-                model = Constants.BASE_POSTER_IMAGE_URL + homeMediaUI.posterPath,
+                model = BASE_POSTER_IMAGE_URL + homeMediaUI.posterPath,
                 contentDescription = null,
                 placeholder = painterResource(id = R.drawable.placeholder),
                 error = painterResource(id = R.drawable.ic_broken_image),
@@ -257,7 +256,7 @@ fun SearchMovieCard(
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = CenterVertically
         ) {
             // 1. Poster Thumbnail Frame
             Box(
@@ -300,7 +299,7 @@ fun SearchMovieCard(
 
                 // Release Date or Overview Line with Icon
                 if (!overview.isNullOrBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = CenterVertically) {
                        Text(
                             text = overview,
                             color = TmdbCinematicTheme.TextSecondary,
@@ -380,7 +379,7 @@ fun SavedMovieCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = CenterVertically
             ) {
                 // 1. Movie Poster (Cinema 2:3 Ratio)
                 Box(
@@ -412,7 +411,7 @@ fun SavedMovieCard(
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = CenterVertically
                         ) {
                             Text(
                                 text = item.title,
@@ -464,7 +463,7 @@ fun SavedMovieCard(
 
                     // Metadata Badges Footer (Rating, Year, Duration, Language)
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
@@ -474,7 +473,7 @@ fun SavedMovieCard(
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(Color(0xFFFFB800).copy(alpha = 0.15f))
                                 .padding(horizontal = 6.dp, vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment = CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
                             Icon(
@@ -628,11 +627,11 @@ fun HomeHeader(title: String, onClick: () -> Unit, showMore: Boolean) {
     var iconPos by remember { mutableStateOf(false) }
 
     Row(
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = CenterVertically) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,

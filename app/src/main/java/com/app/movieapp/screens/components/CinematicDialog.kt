@@ -17,7 +17,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.app.movieapp.screens.componets
+package com.app.movieapp.screens.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

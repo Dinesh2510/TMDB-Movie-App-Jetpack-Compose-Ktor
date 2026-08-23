@@ -77,7 +77,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
-import com.app.movieapp.screens.componets.SavedMovieCard
+import com.app.movieapp.screens.components.SavedMovieCard
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import org.koin.androidx.compose.koinViewModel
 

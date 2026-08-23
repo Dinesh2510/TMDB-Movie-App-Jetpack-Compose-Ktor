@@ -73,7 +73,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.app.movieapp.data.viewmodel.AiChatViewModel
 import com.app.movieapp.data.viewmodel.ChatMessage
-import com.app.movieapp.screens.componets.CinematicDialog
+import com.app.movieapp.screens.components.CinematicDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import org.koin.androidx.compose.koinViewModel
 

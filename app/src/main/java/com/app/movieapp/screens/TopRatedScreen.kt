@@ -73,7 +73,7 @@ import com.app.movieapp.data.viewmodel.ContentType
 import com.app.movieapp.data.viewmodel.TopRatedViewModel
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Movies
-import com.app.movieapp.screens.componets.CinematicErrorState
+import com.app.movieapp.screens.components.CinematicErrorState
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_BACKDROP_IMAGE_URL

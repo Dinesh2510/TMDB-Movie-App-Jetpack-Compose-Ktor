@@ -85,8 +85,8 @@ import com.app.movieapp.data.viewmodel.MovieDetailsViewModel
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Cast
-import com.app.movieapp.screens.componets.CinematicErrorState
-import com.app.movieapp.screens.componets.HomeSmallThumb
+import com.app.movieapp.screens.components.CinematicErrorState
+import com.app.movieapp.screens.components.HomeSmallThumb
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants

@@ -72,7 +72,7 @@ import androidx.compose.ui.unit.sp
 import com.app.movieapp.data.viewmodel.AuthViewModel
 import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.WatchListViewModel
-import com.app.movieapp.screens.componets.CinematicDialog
+import com.app.movieapp.screens.components.CinematicDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import org.koin.androidx.compose.koinViewModel
 
