@@ -78,6 +78,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
@@ -339,9 +340,8 @@ private fun SecurityPrivacyContent() {
         }
     }
 }
-
 // ==========================================
-// 4. ABOUT APP SCREEN
+// 4. ABOUT APP SCREEN (GLASSMORPHIC STYLED)
 // ==========================================
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -352,32 +352,59 @@ private fun AboutAppContent() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // App Logo Icon Frame
+        // ── App Logo Glass Card Frame ──────────────────────────────
         Card(
             modifier = Modifier
                 .size(110.dp)
-                .shadow(elevation = 20.dp, shape = RoundedCornerShape(28.dp))
-                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(28.dp)),
+                .shadow(
+                    elevation = 24.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    spotColor = TmdbCinematicTheme.CoralAccent.copy(alpha = 0.3f)
+                )
+                .border(1.2.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(28.dp)),
             colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                TmdbCinematicTheme.CoralAccent.copy(alpha = 0.15f),
+                                Color.Transparent
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Text(text = "TMDB", color = TmdbCinematicTheme.CoralAccent, fontSize = 28.sp, fontWeight = FontWeight.Black)
+                Text(
+                    text = "TMDB",
+                    color = TmdbCinematicTheme.CoralAccent,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(text = "The TMDB Movie App", color = TmdbCinematicTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text(text = "Version 1.0.0 (Build 2026)", color = TmdbCinematicTheme.TextSecondary, fontSize = 12.sp)
+        Text(
+            text = "The TMDB Movie App",
+            color = TmdbCinematicTheme.TextPrimary,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Version 1.0.0 (Build 2026)",
+            color = TmdbCinematicTheme.TextSecondary,
+            fontSize = 12.sp
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -396,7 +423,7 @@ private fun AboutAppContent() {
         // ── What's Inside (Features) ────────────────────────────
         InfoCard(title = "What's Inside") {
             FeatureRow(Icons.Default.Home, "Home", "Featured slider, continue watching, popular & trending movies")
-            FeatureRow(Icons.Default.Movie, "Movies", "Top-rated films and shows, curated collections")
+            FeatureRow(Icons.Default.Movie, "Catalog", "Top-rated films and TV shows with dual pagination")
             FeatureRow(Icons.Default.Bookmark, "Wishlist", "Save movies to watch later, synced locally with Room")
             FeatureRow(Icons.Default.Search, "Search", "Real-time search across the full TMDB catalog")
             FeatureRow(Icons.Default.Person, "Profile", "Preferences, theme, and account settings", isLast = true)
@@ -428,7 +455,7 @@ private fun AboutAppContent() {
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Android Developer · Content Creator",
                 color = TmdbCinematicTheme.TextSecondary,
@@ -466,7 +493,7 @@ private fun AboutAppContent() {
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
         // ── Copyright / License ──────────────────────────────────
         Text(
@@ -487,11 +514,11 @@ private fun AboutAppContent() {
             }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
-// ── Reusable pieces ─────────────────────────────────────────────
+// ── Reusable Glassmorphic Components ─────────────────────────────
 
 @Composable
 private fun InfoCard(
@@ -501,12 +528,34 @@ private fun InfoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = Color.Black.copy(alpha = 0.5f)
+            )
             .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(24.dp)),
         colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(text = title, color = TmdbCinematicTheme.CoralAccent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(10.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.03f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Text(
+                text = title,
+                color = TmdbCinematicTheme.CoralAccent,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
             content()
         }
     }
@@ -523,17 +572,36 @@ private fun FeatureRow(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = TmdbCinematicTheme.CoralAccent,
-            modifier = Modifier.size(18.dp).padding(top = 2.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(text = title, color = TmdbCinematicTheme.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(TmdbCinematicTheme.CoralAccent.copy(alpha = 0.12f))
+                .border(1.dp, TmdbCinematicTheme.CoralAccent.copy(alpha = 0.2f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = TmdbCinematicTheme.CoralAccent,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = TmdbCinematicTheme.TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = description, color = TmdbCinematicTheme.TextSecondary, fontSize = 12.sp, lineHeight = 16.sp)
+            Text(
+                text = description,
+                color = TmdbCinematicTheme.TextSecondary,
+                fontSize = 12.sp,
+                lineHeight = 16.sp
+            )
         }
     }
     if (!isLast) Spacer(modifier = Modifier.height(14.dp))
@@ -543,9 +611,9 @@ private fun FeatureRow(
 private fun TechChip(label: String) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(TmdbCinematicTheme.GlassSurface)
-            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
+            .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(12.dp))
             .padding(horizontal = 12.dp, vertical = 7.dp)
     ) {
         Text(
@@ -568,25 +636,41 @@ private fun SocialLinkRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
+            .background(TmdbCinematicTheme.GlassSurface)
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(34.dp)
+                .size(36.dp)
                 .clip(CircleShape)
-                .background(TmdbCinematicTheme.GlassSurface)
-                .border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape),
+                .background(TmdbCinematicTheme.CoralAccent.copy(alpha = 0.12f))
+                .border(1.dp, TmdbCinematicTheme.CoralAccent.copy(alpha = 0.25f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = label, tint = TmdbCinematicTheme.CoralAccent, modifier = Modifier.size(16.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = TmdbCinematicTheme.CoralAccent,
+                modifier = Modifier.size(18.dp)
+            )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = label, color = TmdbCinematicTheme.TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Text(text = value, color = TmdbCinematicTheme.TextSecondary, fontSize = 11.sp)
+            Text(
+                text = label,
+                color = TmdbCinematicTheme.TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = value,
+                color = TmdbCinematicTheme.TextSecondary,
+                fontSize = 11.sp
+            )
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
@@ -595,9 +679,8 @@ private fun SocialLinkRow(
             modifier = Modifier.size(12.dp)
         )
     }
-    if (!isLast) HorizontalDivider(color = Color.White.copy(alpha = 0.08f), modifier = Modifier.padding(start = 46.dp))
+    if (!isLast) Spacer(modifier = Modifier.height(10.dp))
 }
-
 // --- REUSABLE UI COMPONENTS ---
 
 @Composable

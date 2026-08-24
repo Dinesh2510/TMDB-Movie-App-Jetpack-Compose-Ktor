@@ -1,32 +1,19 @@
-/*
- * Copyright (c) 2026 Dinesh2510
- * File : MovieDetailsViewModel.kt
- * Project : TMDB Ktor
- * Module : TMDB_Ktor.app.main
- * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
- *
- * Author : Dinesh
- * GitHub : https://github.com/Dinesh2510
- * YouTube : https://www.youtube.com/@pixeldesigndeveloper
- * Website : https://pixeldev.in
- *
- * Copyright (c) 2026 Dinesh. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0
- *
- * https://www.apache.org/licenses/LICENSE-2.0
- */
-
 package com.app.movieapp.data.viewmodel
 
-import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.movieapp.R
 import com.app.movieapp.data.remote.response.MovieDetailsDTO
 import com.app.movieapp.data.remote.response.MovieResponse
+import com.app.movieapp.data.remote.response.VideoResponse
+import com.app.movieapp.data.remote.response.VideoResult
 import com.app.movieapp.data.repository.MovieDetailsRepository
 import com.app.movieapp.models.Cast
+import com.app.movieapp.utlis.MovieState
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -36,10 +23,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.serialization.json.Json
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.UnknownHostException
-
-import androidx.annotation.StringRes
 
 sealed interface MovieDetailsUIState {
     data object Loading : MovieDetailsUIState
@@ -57,6 +44,12 @@ class MovieDetailsViewModel(
 
     private val _uiState = MutableStateFlow<MovieDetailsUIState>(MovieDetailsUIState.Loading)
     val uiState: StateFlow<MovieDetailsUIState> = _uiState.asStateFlow()
+
+    private val _videoResponses = MutableStateFlow<MovieState<VideoResponse?>>(MovieState.Loading)
+    val videoResponses: StateFlow<MovieState<VideoResponse?>> = _videoResponses.asStateFlow()
+
+    private val _trailerKey = MutableStateFlow<String?>(null)
+    val trailerKey: StateFlow<String?> = _trailerKey.asStateFlow()
 
     fun fetchAllMovieDetails(movieId: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -88,5 +81,42 @@ class MovieDetailsViewModel(
                 _uiState.value = MovieDetailsUIState.Error(R.string.error_unknown)
             }
         }
+    }
+
+    fun fetchMovieVideos(movieId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _videoResponses.value = MovieState.Loading
+            try {
+                val response = repository.getMovieVideosRepo(movieId).first()
+                _videoResponses.value = MovieState.Success(response)
+
+                val primaryTrailer = extractPrimaryTrailer(response.results)
+                _trailerKey.value = primaryTrailer?.key
+            } catch (e: Exception) {
+                _videoResponses.value = MovieState.Error("Failed to load videos.")
+            }
+        }
+    }
+
+    fun fetchTvShowVideos(tvId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _videoResponses.value = MovieState.Loading
+            try {
+                val response = repository.getTvShowVideosRepo(tvId).first()
+                _videoResponses.value = MovieState.Success(response)
+
+                val primaryTrailer = extractPrimaryTrailer(response.results)
+                _trailerKey.value = primaryTrailer?.key
+            } catch (e: Exception) {
+                _videoResponses.value = MovieState.Error("Failed to load videos.")
+            }
+        }
+    }
+
+    private fun extractPrimaryTrailer(results: List<VideoResult>?): VideoResult? {
+        if (results.isNullOrEmpty()) return null
+        return results.firstOrNull { it.site.equals("YouTube", ignoreCase = true) && it.type.equals("Trailer", ignoreCase = true) && it.official }
+            ?: results.firstOrNull { it.site.equals("YouTube", ignoreCase = true) && it.type.equals("Trailer", ignoreCase = true) }
+            ?: results.firstOrNull { it.site.equals("YouTube", ignoreCase = true) }
     }
 }

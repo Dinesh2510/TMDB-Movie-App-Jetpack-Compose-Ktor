@@ -32,7 +32,10 @@
     <string name="upcoming">Upcoming </string>
     <string name="similar">Similar Movies </string>
         <!-- Common Network / Error Strings -->
-        <string name="error_no_internet">No internet connection. Please verify your network and retry.</string>
-        <string name="error_network_communication">Network communication error. Please try again.</string>
-        <string name="error_unknown">An error occurred. Please try again.</string>
+    <string name="error_no_internet">No internet connection. Please check your connection and try again.</string>
+    <string name="error_timeout">Request timed out. Server took too long to respond.</string>
+    <string name="error_server">Server error occurred. Please try again later.</string>
+    <string name="error_network_communication">Network communication failure. Please try again.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
+    <string name="error_content_not_found">The requested movie or show could not be found.</string>
 </resources>

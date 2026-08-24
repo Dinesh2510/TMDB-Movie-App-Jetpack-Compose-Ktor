@@ -24,6 +24,7 @@ import com.app.movieapp.data.remote.response.GenreResponse
 import com.app.movieapp.data.remote.response.MovieDetailsDTO
 import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.data.remote.response.MultiSearchResponse
+import com.app.movieapp.data.remote.response.VideoResponse
 import com.app.movieapp.utlis.Constants.Companion.API_KEY
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -271,5 +272,23 @@ class ApiService(private val client: HttpClient) {
         parameter("api_key", apiKey)
         parameter("language", language)
         parameter("sort_by", sortBy)
+    }.body()
+
+    suspend fun getMovieVideos(
+        movieId: Int,
+        apiKey: String = API_KEY,
+        language: String = "en-US"
+    ): VideoResponse = client.get("movie/$movieId/videos") {
+        parameter("api_key", apiKey)
+        parameter("language", language)
+    }.body()
+
+    suspend fun getTvShowVideos(
+        tvId: Int,
+        apiKey: String = API_KEY,
+        language: String = "en-US"
+    ): VideoResponse = client.get("tv/$tvId/videos") {
+        parameter("api_key", apiKey)
+        parameter("language", language)
     }.body()
 }

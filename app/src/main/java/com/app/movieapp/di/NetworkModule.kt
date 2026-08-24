@@ -52,7 +52,7 @@ val networkModule = module {
               //  accept(ContentType.Application.Json)
               //  header("Authorization", "Bearer ${Constants.API_KEY}")
             }
-
+            expectSuccess = true
             install(ContentNegotiation) {
                 json(
                     Json {

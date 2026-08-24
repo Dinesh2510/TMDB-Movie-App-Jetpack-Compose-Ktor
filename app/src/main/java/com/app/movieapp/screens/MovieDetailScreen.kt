@@ -20,6 +20,7 @@
 package com.app.movieapp.screens
 
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -58,6 +59,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,11 +78,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil3.compose.AsyncImage
 import coil3.compose.rememberAsyncImagePainter
 import com.app.movieapp.R
 import com.app.movieapp.data.local.WatchListModel
 import com.app.movieapp.data.remote.response.MovieDetailsDTO
 import com.app.movieapp.data.remote.response.MovieResponse
+import com.app.movieapp.data.remote.response.VideoResponse
 import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.MovieDetailsUIState
 import com.app.movieapp.data.viewmodel.MovieDetailsViewModel
@@ -87,13 +93,16 @@ import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Cast
 import com.app.movieapp.screens.components.CinematicErrorState
 import com.app.movieapp.screens.components.HomeSmallThumb
+import com.app.movieapp.screens.components.VideoSelectionDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
+import com.app.movieapp.utlis.MovieState
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
+import androidx.core.net.toUri
 
 @Composable
 fun MovieDetailsScreen(
@@ -200,45 +209,58 @@ fun MovieDetailsScreen(
 fun DisplayMovieData(
     moviesInfo: MovieDetailsDTO,
     navController: NavHostController,
-    watchListViewModel: WatchListViewModel,
-    continueWatchingViewModel: ContinueWatchingViewModel
+    watchListViewModel: WatchListViewModel = koinViewModel(),
+    continueWatchingViewModel: ContinueWatchingViewModel = koinViewModel(),
+    movieDetailsViewModel: MovieDetailsViewModel = koinViewModel()
 ) {
+    val context = LocalContext.current
+    val date = remember { SimpleDateFormat.getDateInstance().format(Date()) }
+
+    // Observe Watchlist state
     LaunchedEffect(moviesInfo.id) {
         watchListViewModel.exist(moviesInfo.id)
     }
     val exist = watchListViewModel.exist.value
-    val context = LocalContext.current
-    val date = SimpleDateFormat.getDateInstance().format(Date())
 
-    val formattedGenres = moviesInfo.genres.joinToString(", ") { it.name }
+    // Observe Video Loading and Response state
+    val videoState by movieDetailsViewModel.videoResponses.collectAsState()
+    var showTrailerDialog by remember { mutableStateOf(false) }
 
-    val myListMovie = WatchListModel(
-        mediaId = moviesInfo.id,
-        title = moviesInfo.title,
-        posterPath = moviesInfo.posterPath,
-        backdropPath = moviesInfo.backdropPath,
-        releaseDate = moviesInfo.releaseDate,
-        rating = moviesInfo.voteAverage,
-        runtime = moviesInfo.runtime,
-        overview = moviesInfo.overview.orEmpty(),
-        genres = formattedGenres,
-        originalLanguage = moviesInfo.spokenLanguages.firstOrNull()?.name ?: "English",
-        mediaType = "movie",
-        addedOn = date
-    )
+    val formattedGenres = remember(moviesInfo.genres) {
+        moviesInfo.genres.joinToString(", ") { it.name }
+    }
+
+    val myListMovie = remember(moviesInfo, date, formattedGenres) {
+        WatchListModel(
+            mediaId = moviesInfo.id,
+            title = moviesInfo.title,
+            posterPath = moviesInfo.posterPath,
+            backdropPath = moviesInfo.backdropPath,
+            releaseDate = moviesInfo.releaseDate,
+            rating = moviesInfo.voteAverage,
+            runtime = moviesInfo.runtime,
+            overview = moviesInfo.overview.orEmpty(),
+            genres = formattedGenres,
+            originalLanguage = moviesInfo.spokenLanguages.firstOrNull()?.name ?: "English",
+            mediaType = "movie",
+            addedOn = date
+        )
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(480.dp)
     ) {
-        Image(
-            painter = rememberAsyncImagePainter(Constants.BASE_BACKDROP_IMAGE_URL + moviesInfo.backdropPath),
+        // Backdrop Image
+        AsyncImage(
+            model = Constants.BASE_BACKDROP_IMAGE_URL + moviesInfo.backdropPath,
             contentDescription = "Backdrop",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
 
+        // Gradient Overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -254,6 +276,7 @@ fun DisplayMovieData(
                 )
         )
 
+        // Top Action Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -284,8 +307,7 @@ fun DisplayMovieData(
                     onClick = {
                         if (exist != 0) {
                             watchListViewModel.removeFromWatchList(mediaId = moviesInfo.id)
-                            Toast.makeText(context, "Removed from Watchlist", Toast.LENGTH_SHORT)
-                                .show()
+                            Toast.makeText(context, "Removed from Watchlist", Toast.LENGTH_SHORT).show()
                         } else {
                             watchListViewModel.addToWatchList(myListMovie)
                             Toast.makeText(context, "Added to Watchlist", Toast.LENGTH_SHORT).show()
@@ -333,6 +355,7 @@ fun DisplayMovieData(
             }
         }
 
+        // Bottom Details & Action Button
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -406,6 +429,7 @@ fun DisplayMovieData(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // WATCH NOW Action Button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -417,6 +441,7 @@ fun DisplayMovieData(
                         )
                     )
                     .clickable {
+                        // 1. Save progress locally
                         val runtimeMs = (moviesInfo.runtime ?: 120) * 60 * 1000L
                         continueWatchingViewModel.saveProgress(
                             mediaId = moviesInfo.id,
@@ -428,8 +453,10 @@ fun DisplayMovieData(
                             releaseDate = moviesInfo.releaseDate,
                             rating = moviesInfo.voteAverage
                         )
-                        Toast.makeText(context, "Streaming ${moviesInfo.title}", Toast.LENGTH_SHORT)
-                            .show()
+
+                        // 2. Trigger Video API call & Open Dialog
+                        movieDetailsViewModel.fetchMovieVideos(moviesInfo.id)
+                        showTrailerDialog = true
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -452,7 +479,25 @@ fun DisplayMovieData(
             }
         }
     }
+
+    // ── TRAILER / VIDEO SELECTION DIALOG ──
+    if (showTrailerDialog) {
+        VideoSelectionDialog(
+            videoState = videoState,
+            onDismiss = { showTrailerDialog = false },
+            onVideoSelected = { video ->
+                showTrailerDialog = false
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    "https://www.youtube.com/watch?v=${video.key}".toUri()
+                )
+                context.startActivity(intent)
+            }
+        )
+    }
 }
+
+
 
 @Composable
 fun CastMediaSection(castList: List<Cast>) {

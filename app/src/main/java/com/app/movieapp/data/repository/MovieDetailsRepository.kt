@@ -23,6 +23,7 @@ import com.app.movieapp.data.remote.ApiService
 import com.app.movieapp.data.remote.response.CastResponse
 import com.app.movieapp.data.remote.response.MovieDetailsDTO
 import com.app.movieapp.data.remote.response.MovieResponse
+import com.app.movieapp.data.remote.response.VideoResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -42,6 +43,15 @@ class MovieDetailsRepository(private val apiService: ApiService) {
 
     fun getSimilarMoviesRepo(movieId: String): Flow<MovieResponse> = flow {
         val response = apiService.getSimilarMovies(movieId.toInt())
+        emit(response)
+    }.flowOn(Dispatchers.IO)
+    fun getMovieVideosRepo(movieId: Int): Flow<VideoResponse> = flow {
+        val response = apiService.getMovieVideos(movieId = movieId)
+        emit(response)
+    }.flowOn(Dispatchers.IO)
+
+    fun getTvShowVideosRepo(tvId: Int): Flow<VideoResponse> = flow {
+        val response = apiService.getTvShowVideos(tvId = tvId)
         emit(response)
     }.flowOn(Dispatchers.IO)
 }

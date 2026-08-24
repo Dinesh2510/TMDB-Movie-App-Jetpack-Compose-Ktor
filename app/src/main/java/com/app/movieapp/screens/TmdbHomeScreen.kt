@@ -19,6 +19,7 @@
 
 package com.app.movieapp.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -103,11 +104,13 @@ import androidx.compose.animation.core.tween
 
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.runtime.LaunchedEffect
 import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import kotlinx.coroutines.delay
 
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.app.movieapp.data.local.ContinueWatchingModel
 import com.app.movieapp.screens.components.CinematicErrorState
@@ -115,14 +118,44 @@ import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.netflixFamily
 import com.app.movieapp.utlis.rememberHapticController
 
+import com.app.movieapp.data.local.WatchListModel
+import com.app.movieapp.data.viewmodel.WatchListViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+
+fun Movies.toWatchListModel(): WatchListModel {
+    val date = SimpleDateFormat.getDateInstance().format(Date())
+    return WatchListModel(
+        mediaId = this.id,
+        title = this.displayTitle,
+        posterPath = this.posterPath,
+        backdropPath = this.backdropPath,
+        releaseDate = this.displayReleaseDate,
+        rating = this.voteAverage,
+        runtime = this.runtime ?: 0,
+        overview = this.overview,
+        genres = this.genres?.joinToString(", ") { it.name } ?: "",
+        originalLanguage = this.originalLanguage.ifEmpty { "English" },
+        mediaType = this.mediaType ?: "movie",
+        addedOn = date
+    )
+}
 @Composable
 fun TmdbHomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = koinViewModel(),
     continueWatchingViewModel: ContinueWatchingViewModel = koinViewModel(),
+    watchListViewModel: WatchListViewModel = koinViewModel()
 ) {
     val homeState by viewModel.homeFeedState.collectAsState()
     val continueWatchingList by continueWatchingViewModel.continueWatchingList.collectAsState()
+
+    // Observe Room Watchlist saved Flow
+    val watchListFlow by watchListViewModel.myMovieData
+    val watchListItems by watchListFlow.collectAsState(initial = emptyList())
+    val savedMediaIds = remember(watchListItems) { watchListItems.map { it.mediaId }.toSet() }
+
+    val context = LocalContext.current
     val haptics = rememberHapticController()
 
     Box(
@@ -139,10 +172,12 @@ fun TmdbHomeScreen(
                     CenteredCircularProgressIndicator()
                 }
             }
-            is HomeFeedUIState.Error -> {CinematicErrorState(
-                errorMessage = stringResource(id = state.messageRes),
-                onRetryClick = { viewModel.fetchAllHomeData() }
-            )}
+            is HomeFeedUIState.Error -> {
+                CinematicErrorState(
+                    errorMessage = stringResource(id = state.messageRes),
+                    onRetryClick = { viewModel.fetchAllHomeData() }
+                )
+            }
             is HomeFeedUIState.Success -> {
                 val discoverMovies = state.discoverMovies?.results ?: emptyList()
                 val trendingAllMovies = state.trendingAll?.results?.take(10) ?: emptyList()
@@ -158,14 +193,14 @@ fun TmdbHomeScreen(
                     // 1. Home Header
                     item {
                         HomeHeader(
-                            onSearchClick = { navController.navigate(MovieAppScreen.MOVIE_AI.route)
+                            onSearchClick = {
+                                navController.navigate(MovieAppScreen.MOVIE_AI.route)
                                 haptics.trigger(AppHaptic.Click)
-
                             }
                         )
                     }
 
-                    // 2. Hero Featured Movies Pager (From Discover API)
+                    // 2. Hero Featured Movies Pager
                     if (discoverMovies.isNotEmpty()) {
                         item {
                             HeroTrendingPager(
@@ -177,7 +212,7 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // --- 3. CONTINUE WATCHING SECTION ---
+                    // 3. CONTINUE WATCHING SECTION
                     if (continueWatchingList.isNotEmpty()) {
                         item {
                             ContinueWatchSection(
@@ -190,7 +225,7 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 4. TRENDING 10 Section (From Trending All API)
+                    // 4. TRENDING 10 Section
                     if (trendingAllMovies.isNotEmpty()) {
                         item {
                             ModernTop10Section(
@@ -208,6 +243,17 @@ fun TmdbHomeScreen(
                             LandscapeMoviesSection(
                                 sectionTitle = "UPCOMING SPOTLIGHT",
                                 movies = upcomingMovies,
+                                savedMediaIds = savedMediaIds,
+                                onBookmarkClick = { movie, isBookmarked ->
+                                    haptics.trigger(AppHaptic.Click)
+                                    if (isBookmarked) {
+                                        watchListViewModel.removeFromWatchList(movie.id)
+                                        Toast.makeText(context, "Removed from Watchlist", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        watchListViewModel.addToWatchList(movie.toWatchListModel())
+                                        Toast.makeText(context, "Added to Watchlist", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
                                 onSeeAllClick = {
                                     navController.navigate("${MovieAppScreen.MOVIE_SEE_ALL.route}/$upcomingListScreen")
                                 },
@@ -230,7 +276,7 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 7. "Now Playing in Theaters" Section (Poster Grid)
+                    // 7. "Now Playing in Theaters" Section
                     if (nowPlayingMovies.isNotEmpty()) {
                         item {
                             SectionHeader(
@@ -805,17 +851,22 @@ fun CategoryImageCard(
 }
 
 // --- LANDSCAPE SECTION ---
+// --- LANDSCAPE MOVIES SECTION WITH BOOKMARK SUPPORT ---
 @Composable
 fun LandscapeMoviesSection(
     sectionTitle: String,
     movies: List<Movies>,
+    savedMediaIds: Set<Int>,
+    onBookmarkClick: (Movies, Boolean) -> Unit,
     onSeeAllClick: () -> Unit,
     onMovieClick: (Movies) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier
-        .fillMaxWidth()
-        .padding(vertical = 12.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
         SectionHeader(title = sectionTitle, onSeeAllClick = onSeeAllClick)
 
         LazyRow(
@@ -823,15 +874,13 @@ fun LandscapeMoviesSection(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(movies, key = { it.id }) { movie ->
+                val isBookmarked = savedMediaIds.contains(movie.id)
                 LandscapeMovieCard(
                     movie = movie,
+                    isBookmarked = isBookmarked,
+                    onBookmarkClick = { onBookmarkClick(movie, isBookmarked) },
                     onMovieClick = onMovieClick
                 )
-
-            /*    LandscapeMovieCard(
-                    movie = movie,
-                    onMovieClick = onMovieClick
-                )*/
             }
         }
     }
@@ -841,6 +890,8 @@ fun LandscapeMoviesSection(
 @Composable
 fun LandscapeMovieCard(
     movie: Movies,
+    isBookmarked: Boolean,
+    onBookmarkClick: () -> Unit,
     onMovieClick: (Movies) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -848,7 +899,7 @@ fun LandscapeMovieCard(
 
     Card(
         modifier = modifier
-            .width(240.dp) // Wide 16:9 Landscape Frame
+            .width(240.dp)
             .height(135.dp)
             .clickable { onMovieClick(movie) },
         shape = RoundedCornerShape(18.dp),
@@ -864,7 +915,6 @@ fun LandscapeMovieCard(
                     shape = RoundedCornerShape(18.dp)
                 )
         ) {
-            // 16:9 Backdrop Image from TMDB
             AsyncImage(
                 model = backdropUrl,
                 contentDescription = movie.title,
@@ -874,7 +924,7 @@ fun LandscapeMovieCard(
                     .clip(RoundedCornerShape(18.dp))
             )
 
-            // Dark Cinematic Gradient Overlay (Top & Bottom readability)
+            // Scrim Overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -908,28 +958,29 @@ fun LandscapeMovieCard(
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
-                    text =  String.format("%.1f", movie.voteAverage),
+                    text = String.format("%.1f", movie.voteAverage),
                     color = Color.White,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            // Top Right Bookmark Shortcut
+            // Top Right Interactive Bookmark Button
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
-                    .size(26.dp)
+                    .size(28.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f)),
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable { onBookmarkClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Filled.BookmarkBorder,
+                    imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                     contentDescription = "Save",
-                    tint = Color.White,
-                    modifier = Modifier.size(14.dp)
+                    tint = if (isBookmarked) TmdbCinematicTheme.CoralAccent else Color.White,
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
@@ -949,21 +1000,23 @@ fun LandscapeMovieCard(
                             color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                    if (movie.genres?.isNotEmpty()!!) {
-                    Text(
-                        text = movie.genres.joinToString(" | ") { it.name },
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 11.sp,
-                        maxLines = 1
-                    )}
+                    if (!movie.genres.isNullOrEmpty()) {
+                        Text(
+                            text = movie.genres.joinToString(" | ") { it.name },
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Neon Coral Play Button
                 Box(
                     modifier = Modifier
                         .size(30.dp)
