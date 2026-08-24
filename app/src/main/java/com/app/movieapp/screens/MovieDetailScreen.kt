@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 22:55
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -20,7 +20,6 @@
 package com.app.movieapp.screens
 
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -54,6 +53,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,6 +77,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.compose.rememberAsyncImagePainter
@@ -84,7 +85,6 @@ import com.app.movieapp.R
 import com.app.movieapp.data.local.WatchListModel
 import com.app.movieapp.data.remote.response.MovieDetailsDTO
 import com.app.movieapp.data.remote.response.MovieResponse
-import com.app.movieapp.data.remote.response.VideoResponse
 import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.MovieDetailsUIState
 import com.app.movieapp.data.viewmodel.MovieDetailsViewModel
@@ -95,14 +95,14 @@ import com.app.movieapp.screens.components.CinematicErrorState
 import com.app.movieapp.screens.components.HomeSmallThumb
 import com.app.movieapp.screens.components.VideoSelectionDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
-import com.app.movieapp.utlis.MovieState
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
-import androidx.core.net.toUri
 
 @Composable
 fun MovieDetailsScreen(
@@ -183,7 +183,7 @@ fun MovieDetailsScreen(
                                         lineHeight = 21.sp,
                                         fontWeight = FontWeight.Normal
                                     )
-                                Spacer(modifier = Modifier.height(20.dp))
+                                    Spacer(modifier = Modifier.height(20.dp))
                                 }
                             }
 
@@ -214,6 +214,7 @@ fun DisplayMovieData(
     movieDetailsViewModel: MovieDetailsViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
+    val hapticController = rememberHapticController()
     val date = remember { SimpleDateFormat.getDateInstance().format(Date()) }
 
     // Observe Watchlist state
@@ -285,7 +286,10 @@ fun DisplayMovieData(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { navController.popBackStack() },
+                onClick = {
+                    hapticController.trigger(AppHaptic.Click)
+                    navController.popBackStack()
+                },
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
@@ -303,12 +307,15 @@ fun DisplayMovieData(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // BOOKMARK / WATCHLIST BUTTON
                 IconButton(
                     onClick = {
                         if (exist != 0) {
+                            hapticController.trigger(AppHaptic.ToggleOff)
                             watchListViewModel.removeFromWatchList(mediaId = moviesInfo.id)
                             Toast.makeText(context, "Removed from Watchlist", Toast.LENGTH_SHORT).show()
                         } else {
+                            hapticController.trigger(AppHaptic.ToggleOn)
                             watchListViewModel.addToWatchList(myListMovie)
                             Toast.makeText(context, "Added to Watchlist", Toast.LENGTH_SHORT).show()
                         }
@@ -327,8 +334,10 @@ fun DisplayMovieData(
                     )
                 }
 
+                // SHARE BUTTON
                 IconButton(
                     onClick = {
+                        hapticController.trigger(AppHaptic.Click)
                         val shareIntent = Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(
@@ -429,7 +438,7 @@ fun DisplayMovieData(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // WATCH NOW Action Button
+            // WATCH NOW ACTION BUTTON
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -441,6 +450,8 @@ fun DisplayMovieData(
                         )
                     )
                     .clickable {
+                        hapticController.trigger(AppHaptic.Confirm)
+
                         // 1. Save progress locally
                         val runtimeMs = (moviesInfo.runtime ?: 120) * 60 * 1000L
                         continueWatchingViewModel.saveProgress(
@@ -486,6 +497,7 @@ fun DisplayMovieData(
             videoState = videoState,
             onDismiss = { showTrailerDialog = false },
             onVideoSelected = { video ->
+                hapticController.trigger(AppHaptic.Click)
                 showTrailerDialog = false
                 val intent = Intent(
                     Intent.ACTION_VIEW,
@@ -496,8 +508,6 @@ fun DisplayMovieData(
         )
     }
 }
-
-
 
 @Composable
 fun CastMediaSection(castList: List<Cast>) {
@@ -537,7 +547,7 @@ fun CastMemberAvatarItem(cast: Cast) {
                 .size(75.dp)
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.05f))
-                .border(2.dp, TmdbCinematicTheme.CoralAccent, CircleShape),
+                .border(2.dp, MaterialTheme.colorScheme.primary.copy(0.5f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             if (!cast.profilePath.isNullOrBlank()) {
@@ -589,7 +599,9 @@ fun SimilarMediaSection(
     media: MovieResponse,
     navController: NavHostController
 ) {
+    val hapticController = rememberHapticController()
     val mediaList = media.results
+
     Column {
         Text(
             text = "SIMILAR MOVIES",
@@ -606,6 +618,7 @@ fun SimilarMediaSection(
                 HomeSmallThumb(
                     BASE_POSTER_IMAGE_URL + mediaList[index].posterPath
                 ) {
+                    hapticController.trigger(AppHaptic.Click)
                     navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${mediaList[index].id}")
                 }
             }

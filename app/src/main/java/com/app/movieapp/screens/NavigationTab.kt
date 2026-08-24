@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 22:30
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -34,12 +34,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,19 +46,13 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -76,7 +68,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -88,11 +79,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import coil3.compose.AsyncImage
 import com.app.movieapp.graph.Graph
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.ui.theme.FrostedGlassTheme
-
+import com.app.movieapp.utlis.AppHaptic
+import com.app.movieapp.utlis.rememberHapticController
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Filled.Home)
@@ -109,6 +100,7 @@ fun FloatingAirNavigationBar(
     onSearchClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val hapticController = rememberHapticController()
     val tabs = remember {
         listOf(Screen.Home, Screen.Movies, Screen.Saved, Screen.Profile)
     }
@@ -183,7 +175,12 @@ fun FloatingAirNavigationBar(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) { onTabSelected(screen) },
+                            ) {
+                                if (!isSelected) {
+                                    hapticController.trigger(AppHaptic.SegmentTick)
+                                    onTabSelected(screen)
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
@@ -228,7 +225,10 @@ fun FloatingAirNavigationBar(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) { onSearchClicked() },
+                ) {
+                    hapticController.trigger(AppHaptic.Click)
+                    onSearchClicked()
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -247,6 +247,7 @@ fun MainAppScreen(
     rootNavController: NavHostController // Attached to RootNavigation graph
 ) {
     val context = LocalContext.current
+    val hapticController = rememberHapticController()
     var lastBackPressTime by remember { mutableLongStateOf(0L) }
 
     BackHandler {
@@ -255,8 +256,9 @@ fun MainAppScreen(
             // Second press within 2 seconds -> close the app
             (context as? Activity)?.finish()
         } else {
-            // First press -> remember time and show feedback
+            // First press -> trigger warning haptic and toast
             lastBackPressTime = currentTime
+            hapticController.trigger(AppHaptic.Reject)
             Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
         }
     }
@@ -280,7 +282,6 @@ fun MainAppScreen(
                     }
                 },
                 onSearchClicked = {
-                    // Navigates using rootNavController (No IllegalArgumentException!)
                     rootNavController.navigate(MovieAppScreen.MOVIE_SEARCH.route)
                 }
             )
@@ -292,7 +293,7 @@ fun MainAppScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.Home.route) {
-                TmdbHomeScreen(navController =rootNavController )
+                TmdbHomeScreen(navController = rootNavController)
             }
             composable(Screen.Movies.route) {
                 TopRatedScreen(rootNavController)

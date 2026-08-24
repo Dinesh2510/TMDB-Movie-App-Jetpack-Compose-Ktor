@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 23:40
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -75,6 +75,8 @@ import com.app.movieapp.data.viewmodel.AiChatViewModel
 import com.app.movieapp.data.viewmodel.ChatMessage
 import com.app.movieapp.screens.components.CinematicDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -82,6 +84,7 @@ fun AiMovieChatScreen(
     navController: NavHostController,
     viewModel: AiChatViewModel = koinViewModel()
 ) {
+    val hapticController = rememberHapticController()
     val messages by viewModel.messages.collectAsState()
     val isGenerating by viewModel.isGenerating.collectAsState()
     val listState = rememberLazyListState()
@@ -95,6 +98,15 @@ fun AiMovieChatScreen(
         }
     }
 
+    // Trigger positive confirmation haptic when AI finishes generating response
+    var wasGenerating by remember { mutableStateOf(false) }
+    LaunchedEffect(isGenerating) {
+        if (wasGenerating && !isGenerating && messages.isNotEmpty() && !messages.last().isUser) {
+            hapticController.trigger(AppHaptic.Confirm)
+        }
+        wasGenerating = isGenerating
+    }
+
     // Clear Chat Dialog
     CinematicDialog(
         showDialog = showClearDialog,
@@ -104,6 +116,7 @@ fun AiMovieChatScreen(
         negativeButtonText = "Keep",
         icon = Icons.Default.DeleteSweep,
         onPositiveClick = {
+            hapticController.trigger(AppHaptic.Reject)
             showClearDialog = false
             viewModel.clearChat()
         },
@@ -131,7 +144,10 @@ fun AiMovieChatScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
-                        onClick = { navController.popBackStack() },
+                        onClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            navController.popBackStack()
+                        },
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
@@ -182,7 +198,10 @@ fun AiMovieChatScreen(
                 }
 
                 IconButton(
-                    onClick = { showClearDialog = true },
+                    onClick = {
+                        hapticController.trigger(AppHaptic.Click)
+                        showClearDialog = true
+                    },
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
@@ -246,6 +265,7 @@ fun AiMovieChatScreen(
                             .background(TmdbCinematicTheme.GlassSurface)
                             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
                             .clickable {
+                                hapticController.trigger(AppHaptic.SegmentTick)
                                 viewModel.sendMessage(prompt)
                             }
                             .padding(horizontal = 12.dp, vertical = 7.dp)
@@ -304,6 +324,7 @@ fun AiMovieChatScreen(
                                 Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.1f), Color.White.copy(alpha = 0.1f)))
                         )
                         .clickable(enabled = inputText.isNotBlank() && !isGenerating) {
+                            hapticController.trigger(AppHaptic.KeyboardTap)
                             viewModel.sendMessage(inputText)
                             inputText = ""
                         },

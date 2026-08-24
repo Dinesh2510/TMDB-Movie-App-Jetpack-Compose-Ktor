@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 23:25
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import com.app.movieapp.R
 import com.app.movieapp.data.viewmodel.AuthViewModel
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -64,6 +66,8 @@ fun OnboardingScreen(
     onCreateAccountClick: () -> Unit,
     onLoginClick: () -> Unit
 ) {
+    val hapticController = rememberHapticController()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -151,6 +155,7 @@ fun OnboardingScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .background(TmdbCinematicTheme.PrimaryActionGradient)
                         .clickable {
+                            hapticController.trigger(AppHaptic.Confirm)
                             onCreateAccountClick()
                         },
                     contentAlignment = Alignment.Center
@@ -177,6 +182,7 @@ fun OnboardingScreen(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable {
+                            hapticController.trigger(AppHaptic.Click)
                             onLoginClick()
                         }
                     )

@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 23:05
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.sp
 import com.app.movieapp.data.viewmodel.AuthViewModel
 import com.app.movieapp.screens.components.CinematicTextField
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -56,6 +58,7 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
+    val hapticController = rememberHapticController()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -89,11 +92,21 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            CinematicTextField(value = email, onValueChange = { email = it; errorMessage = null }, label = "Email Address")
+            CinematicTextField(
+                value = email,
+                onValueChange = {
+                    email = it
+                    errorMessage = null
+                },
+                label = "Email Address"
+            )
             Spacer(modifier = Modifier.height(16.dp))
             CinematicTextField(
                 value = password,
-                onValueChange = { password = it; errorMessage = null },
+                onValueChange = {
+                    password = it
+                    errorMessage = null
+                },
                 label = "Password",
                 isPassword = true
             )
@@ -105,6 +118,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // SIGN IN BUTTON
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -112,11 +126,25 @@ fun LoginScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(TmdbCinematicTheme.PrimaryActionGradient)
                     .clickable {
+                        hapticController.trigger(AppHaptic.Click)
+
+                        if (email.isBlank() || password.isBlank()) {
+                            hapticController.trigger(AppHaptic.Reject)
+                            errorMessage = "Please enter both email and password."
+                            return@clickable
+                        }
+
                         viewModel.login(
                             email = email,
                             pass = password,
-                            onSuccess = onLoginSuccess,
-                            onError = { errorMessage = "Invalid email or password." }
+                            onSuccess = {
+                                hapticController.trigger(AppHaptic.Confirm)
+                                onLoginSuccess()
+                            },
+                            onError = {
+                                hapticController.trigger(AppHaptic.Reject)
+                                errorMessage = "Invalid email or password."
+                            }
                         )
                     },
                 contentAlignment = Alignment.Center
@@ -131,17 +159,25 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // BOTTOM SIGN UP NAVIGATION
             Row(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Don't have an account? ", color = TmdbCinematicTheme.TextSecondary, fontSize = 14.sp)
+                Text(
+                    text = "Don't have an account? ",
+                    color = TmdbCinematicTheme.TextSecondary,
+                    fontSize = 14.sp
+                )
                 Text(
                     text = "Sign Up",
                     color = TmdbCinematicTheme.CoralAccent,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onRegisterClick() }
+                    modifier = Modifier.clickable {
+                        hapticController.trigger(AppHaptic.Click)
+                        onRegisterClick()
+                    }
                 )
             }
         }

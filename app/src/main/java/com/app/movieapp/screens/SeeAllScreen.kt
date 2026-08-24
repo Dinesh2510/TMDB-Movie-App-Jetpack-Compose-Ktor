@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 23:30
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -56,6 +56,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,12 +82,14 @@ import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Movies
 import com.app.movieapp.screens.components.ErrorStrip
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import com.app.movieapp.utlis.Constants.Companion.discoverListScreen
 import com.app.movieapp.utlis.Constants.Companion.nowPlayingAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.popularAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.upcomingListScreen
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -92,7 +98,11 @@ fun SeeAllScreen(
     navController: NavController,
     viewModel: HomeViewModel = koinViewModel()
 ) {
-    BackHandler { navController.popBackStack() }
+    val hapticController = rememberHapticController()
+
+    BackHandler {
+        navController.popBackStack()
+    }
 
     val (title, allMoviesPagination) = when (selectedTitle) {
         nowPlayingAllListScreen -> {
@@ -116,8 +126,14 @@ fun SeeAllScreen(
             CinematicGridHeader(
                 title = title,
                 subtitle = "Explore Catalog",
-                onClickBack = { navController.popBackStack() },
-                onClickSearch = { navController.navigate(MovieAppScreen.MOVIE_SEARCH.route) }
+                onClickBack = {
+                    hapticController.trigger(AppHaptic.Click)
+                    navController.popBackStack()
+                },
+                onClickSearch = {
+                    hapticController.trigger(AppHaptic.Click)
+                    navController.navigate(MovieAppScreen.MOVIE_SEARCH.route)
+                }
             )
         }
     ) { paddingValues ->
@@ -144,12 +160,17 @@ fun GenreWiseMoviesScreen(
     navController: NavController,
     viewModel: HomeViewModel = koinViewModel()
 ) {
+    val hapticController = rememberHapticController()
+
     // Triggers ViewModel to update the selected genre ID
     LaunchedEffect(genId) {
         genId.toIntOrNull()?.let { viewModel.setGenreData(it) }
     }
 
-    BackHandler { navController.popBackStack() }
+    BackHandler {
+        hapticController.trigger(AppHaptic.Click)
+        navController.popBackStack()
+    }
 
     // Safely collect as lazy paging items
     val genresWiseMoviePagination = viewModel.genresWiseMovieListState.collectAsLazyPagingItems()
@@ -160,8 +181,14 @@ fun GenreWiseMoviesScreen(
             CinematicGridHeader(
                 title = genName,
                 subtitle = "Genre Collection",
-                onClickBack = { navController.popBackStack() },
-                onClickSearch = { navController.navigate(MovieAppScreen.MOVIE_SEARCH.route) }
+                onClickBack = {
+                    hapticController.trigger(AppHaptic.Click)
+                    navController.popBackStack()
+                },
+                onClickSearch = {
+                    hapticController.trigger(AppHaptic.Click)
+                    navController.navigate(MovieAppScreen.MOVIE_SEARCH.route)
+                }
             )
         }
     ) { paddingValues ->
@@ -263,6 +290,36 @@ private fun MovieGridContent(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyGridState()
+    val hapticController = rememberHapticController()
+
+    // Track state to trigger haptic feedback on success/error without spamming
+    var hasConfirmedInitialLoad by remember { mutableStateOf(false) }
+
+    val refreshState = pagingItems.loadState.refresh
+    val appendState = pagingItems.loadState.append
+
+    // Haptic on initial refresh outcome
+    LaunchedEffect(refreshState) {
+        when (refreshState) {
+            is LoadState.NotLoading -> {
+                if (!hasConfirmedInitialLoad && pagingItems.itemCount > 0) {
+                    hasConfirmedInitialLoad = true
+                    hapticController.trigger(AppHaptic.Confirm)
+                }
+            }
+            is LoadState.Error -> {
+                hapticController.trigger(AppHaptic.Reject)
+            }
+            else -> Unit
+        }
+    }
+
+    // Haptic on pagination append error
+    LaunchedEffect(appendState) {
+        if (appendState is LoadState.Error) {
+            hapticController.trigger(AppHaptic.Reject)
+        }
+    }
 
     LazyVerticalGrid(
         state = listState,
@@ -285,7 +342,7 @@ private fun MovieGridContent(
         }
 
         // Loading and Error States
-        when (val refreshState = pagingItems.loadState.refresh) {
+        when (refreshState) {
             is LoadState.Loading -> {
                 header {
                     Box(
@@ -309,7 +366,7 @@ private fun MovieGridContent(
             else -> Unit
         }
 
-        when (val appendState = pagingItems.loadState.append) {
+        when (appendState) {
             is LoadState.Loading -> {
                 header {
                     Box(
@@ -342,6 +399,7 @@ fun MovieItemSeeAll(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
+    val hapticController = rememberHapticController()
     val imageUrl = "$BASE_POSTER_IMAGE_URL${media.posterPath}"
     val title = media.displayTitle
 
@@ -356,6 +414,7 @@ fun MovieItemSeeAll(
             .clip(RoundedCornerShape(20.dp))
             .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(20.dp))
             .clickable {
+                hapticController.trigger(AppHaptic.Click)
                 navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${media.id}")
             },
         colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface)

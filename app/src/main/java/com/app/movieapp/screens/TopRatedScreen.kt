@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 23:35
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -19,10 +19,12 @@
 
 package com.app.movieapp.screens
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,46 +56,83 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.AsyncImage
+import com.app.movieapp.R
 import com.app.movieapp.data.viewmodel.ContentType
 import com.app.movieapp.data.viewmodel.TopRatedViewModel
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Movies
 import com.app.movieapp.screens.components.CinematicErrorState
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_BACKDROP_IMAGE_URL
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
-import org.koin.androidx.compose.koinViewModel
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.interaction.collectIsDraggedAsState
-import androidx.compose.runtime.LaunchedEffect
+import com.app.movieapp.utlis.rememberHapticController
 import kotlinx.coroutines.delay
+import org.koin.androidx.compose.koinViewModel
+import java.io.IOException
+import java.net.UnknownHostException
+
 @Composable
 fun TopRatedScreen(
     navController: NavController,
     viewModel: TopRatedViewModel = koinViewModel()
 ) {
+    val hapticController = rememberHapticController()
     val selectedTab by viewModel.selectedTab.collectAsState()
     val tvPagingItems = viewModel.topRatedTvPagingFlow.collectAsLazyPagingItems()
     val moviePagingItems = viewModel.topRatedMoviesPagingFlow.collectAsLazyPagingItems()
 
     val currentItems = if (selectedTab == ContentType.TV_SHOWS) tvPagingItems else moviePagingItems
     val refreshState = currentItems.loadState.refresh
+    val appendState = currentItems.loadState.append
+
+    var hasConfirmedLoad by remember { mutableStateOf(false) }
+
+    // Haptic on pagination refresh outcome
+    LaunchedEffect(refreshState) {
+        when (refreshState) {
+            is LoadState.NotLoading -> {
+                if (!hasConfirmedLoad && currentItems.itemCount > 0) {
+                    hasConfirmedLoad = true
+                    hapticController.trigger(AppHaptic.Confirm)
+                }
+            }
+            is LoadState.Error -> {
+                hapticController.trigger(AppHaptic.Reject)
+            }
+            else -> Unit
+        }
+    }
+
+    // Haptic on pagination append error
+    LaunchedEffect(appendState) {
+        if (appendState is LoadState.Error) {
+            hapticController.trigger(AppHaptic.Reject)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -106,13 +145,18 @@ fun TopRatedScreen(
             Spacer(modifier = Modifier.height(44.dp))
             SegmentedTabBar(
                 selectedTab = selectedTab,
-                onTabSelected = { viewModel.selectTab(it) }
+                onTabSelected = { newTab ->
+                    if (selectedTab != newTab) {
+                        hasConfirmedLoad = false
+                        viewModel.selectTab(newTab)
+                    }
+                }
             )
 
             // 2. Main Content / Loader / Error State
             when {
                 // Initial Loading State
-                refreshState is androidx.paging.LoadState.Loading && currentItems.itemCount == 0 -> {
+                refreshState is LoadState.Loading && currentItems.itemCount == 0 -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -122,16 +166,19 @@ fun TopRatedScreen(
                 }
 
                 // Initial Error State (e.g. Offline)
-                refreshState is androidx.paging.LoadState.Error -> {
-                    val error = (refreshState as androidx.paging.LoadState.Error).error
+                refreshState is LoadState.Error -> {
+                    val error = (refreshState as LoadState.Error).error
                     val errorRes = when (error) {
-                        is java.net.UnknownHostException -> com.app.movieapp.R.string.error_no_internet
-                        is java.io.IOException -> com.app.movieapp.R.string.error_network_communication
-                        else -> com.app.movieapp.R.string.error_unknown
+                        is UnknownHostException -> R.string.error_no_internet
+                        is IOException -> R.string.error_network_communication
+                        else -> R.string.error_unknown
                     }
-                   CinematicErrorState(
-                        errorMessage = androidx.compose.ui.res.stringResource(id = errorRes),
-                        onRetryClick = { currentItems.retry() }
+                    CinematicErrorState(
+                        errorMessage = stringResource(id = errorRes),
+                        onRetryClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            currentItems.retry()
+                        }
                     )
                 }
 
@@ -144,13 +191,14 @@ fun TopRatedScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        // Hostar Hero Slider Carousel (Full Span)
+                        // Hero Slider Carousel (Full Span)
                         if (currentItems.itemCount >= 5) {
                             item(span = { GridItemSpan(2) }) {
                                 val heroMovies = (0..4).mapNotNull { currentItems[it] }
                                 HostarHeroSlider(
                                     movies = heroMovies,
                                     onMovieClick = { id ->
+                                        hapticController.trigger(AppHaptic.Click)
                                         navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$id")
                                     }
                                 )
@@ -160,7 +208,9 @@ fun TopRatedScreen(
                         // Section Header Title (Full Span)
                         item(span = { GridItemSpan(2) }) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -188,14 +238,15 @@ fun TopRatedScreen(
                                 TopRatedGridCard(
                                     movie = movie,
                                     onMovieClick = {
+                                        hapticController.trigger(AppHaptic.Click)
                                         navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
                                     }
                                 )
                             }
                         }
 
-                        // Bottom Pagination Loader (when scrolling down)
-                        if (currentItems.loadState.append is androidx.paging.LoadState.Loading) {
+                        // Bottom Pagination Loader
+                        if (currentItems.loadState.append is LoadState.Loading) {
                             item(span = { GridItemSpan(2) }) {
                                 Box(
                                     modifier = Modifier
@@ -220,6 +271,8 @@ private fun SegmentedTabBar(
     selectedTab: ContentType,
     onTabSelected: (ContentType) -> Unit
 ) {
+    val hapticController = rememberHapticController()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -242,7 +295,6 @@ private fun SegmentedTabBar(
                     .weight(1f)
                     .fillMaxSize()
                     .clip(CircleShape)
-                    // To this:
                     .background(
                         brush = if (selectedTab == ContentType.TV_SHOWS) {
                             TmdbCinematicTheme.PrimaryActionGradient
@@ -250,7 +302,12 @@ private fun SegmentedTabBar(
                             Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
                         }
                     )
-                    .clickable { onTabSelected(ContentType.TV_SHOWS) },
+                    .clickable {
+                        if (selectedTab != ContentType.TV_SHOWS) {
+                            hapticController.trigger(AppHaptic.SegmentTick)
+                            onTabSelected(ContentType.TV_SHOWS)
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -276,7 +333,6 @@ private fun SegmentedTabBar(
                     .weight(1f)
                     .fillMaxSize()
                     .clip(CircleShape)
-                    // To this:
                     .background(
                         brush = if (selectedTab == ContentType.MOVIES) {
                             TmdbCinematicTheme.PrimaryActionGradient
@@ -284,7 +340,12 @@ private fun SegmentedTabBar(
                             Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
                         }
                     )
-                    .clickable { onTabSelected(ContentType.MOVIES) },
+                    .clickable {
+                        if (selectedTab != ContentType.MOVIES) {
+                            hapticController.trigger(AppHaptic.SegmentTick)
+                            onTabSelected(ContentType.MOVIES)
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -307,7 +368,7 @@ private fun SegmentedTabBar(
     }
 }
 
-// --- HOSTAR STYLE HERO SLIDER ---
+// --- HERO SLIDER ---
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HostarHeroSlider(
@@ -316,8 +377,18 @@ private fun HostarHeroSlider(
 ) {
     if (movies.isEmpty()) return
 
+    val hapticController = rememberHapticController()
     val pagerState = rememberPagerState(pageCount = { movies.size })
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+
+    // Tactile tick when user drags and snaps to a new card
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect {
+            if (isDragged) {
+                hapticController.trigger(AppHaptic.SegmentTick)
+            }
+        }
+    }
 
     // Smooth auto-scroll loop
     LaunchedEffect(isDragged, movies.size) {
@@ -335,7 +406,9 @@ private fun HostarHeroSlider(
 
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -436,7 +509,10 @@ private fun HostarHeroSlider(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f)),
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .clickable {
+                                    hapticController.trigger(AppHaptic.ToggleOn)
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(imageVector = Icons.Default.Add, contentDescription = "Add", tint = Color.White)
@@ -446,7 +522,11 @@ private fun HostarHeroSlider(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(TmdbCinematicTheme.PrimaryActionGradient),
+                                .background(TmdbCinematicTheme.PrimaryActionGradient)
+                                .clickable {
+                                    hapticController.trigger(AppHaptic.Confirm)
+                                    onMovieClick(movie.id)
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.White)

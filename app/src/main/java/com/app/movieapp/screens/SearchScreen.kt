@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 23:15
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -78,8 +78,10 @@ import com.app.movieapp.screens.components.CinematicErrorState
 import com.app.movieapp.screens.components.ErrorStrip
 import com.app.movieapp.screens.components.SearchMovieCard
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 import java.io.IOException
 import java.net.UnknownHostException
@@ -90,6 +92,7 @@ fun SearchScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
     navController: NavHostController,
 ) {
+    val hapticController = rememberHapticController()
     val searchResult = searchViewModel.searchPagingFlow.collectAsLazyPagingItems()
     val activeQuery by searchViewModel.searchQuery.collectAsState()
     var queryText by rememberSaveable { mutableStateOf(activeQuery) }
@@ -111,7 +114,10 @@ fun SearchScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(
-                            onClick = { navController.popBackStack() },
+                            onClick = {
+                                hapticController.trigger(AppHaptic.Click)
+                                navController.popBackStack()
+                            },
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
@@ -165,6 +171,7 @@ fun SearchScreen(
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 if (queryText.isNotBlank()) {
+                                    hapticController.trigger(AppHaptic.KeyboardTap)
                                     searchViewModel.onSearchQueryChanged(queryText)
                                     focusManager.clearFocus()
                                 }
@@ -179,7 +186,10 @@ fun SearchScreen(
                         },
                         trailingIcon = {
                             if (queryText.isNotEmpty()) {
-                                IconButton(onClick = { queryText = "" }) {
+                                IconButton(onClick = {
+                                    hapticController.trigger(AppHaptic.Click)
+                                    queryText = ""
+                                }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "Clear Text",
@@ -217,6 +227,7 @@ fun SearchScreen(
                                     .background(TmdbCinematicTheme.GlassSurface)
                                     .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
                                     .clickable {
+                                        hapticController.trigger(AppHaptic.SegmentTick)
                                         queryText = tag
                                         searchViewModel.onSearchQueryChanged(tag)
                                         focusManager.clearFocus()
@@ -254,7 +265,10 @@ fun SearchScreen(
 
                     CinematicErrorState(
                         errorMessage = stringResource(id = errorRes),
-                        onRetryClick = { searchResult.retry() }
+                        onRetryClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            searchResult.retry()
+                        }
                     )
                 }
 
@@ -283,6 +297,7 @@ fun SearchScreen(
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(TmdbCinematicTheme.PrimaryActionGradient)
                                     .clickable {
+                                        hapticController.trigger(AppHaptic.KeyboardTap)
                                         searchViewModel.onSearchQueryChanged(queryText)
                                         focusManager.clearFocus()
                                     }
@@ -327,6 +342,7 @@ fun SearchScreen(
                                     title = movie?.title ?: movie?.originalName ?: "Untitled",
                                     overview = movie?.overview ?: "No description available."
                                 ) {
+                                    hapticController.trigger(AppHaptic.Click)
                                     movie?.id?.let { id ->
                                         navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$id")
                                     }

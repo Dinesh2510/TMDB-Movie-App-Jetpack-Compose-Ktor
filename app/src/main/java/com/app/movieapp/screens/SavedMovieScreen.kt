@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-24 23:20
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -79,6 +79,8 @@ import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.screens.components.SavedMovieCard
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,6 +89,7 @@ fun SavedMovieScreen(
     watchListViewModel: WatchListViewModel = koinViewModel(),
     navController: NavHostController,
 ) {
+    val hapticController = rememberHapticController()
     val roomData by watchListViewModel.myMovieData.value.collectAsState(initial = emptyList())
     val context = LocalContext.current
     var showSwipeTip by rememberSaveable { mutableStateOf(true) }
@@ -105,24 +108,6 @@ fun SavedMovieScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                       /* IconButton(
-                            onClick = { navController.popBackStack() },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(TmdbCinematicTheme.GlassSurface)
-                                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
-                                contentDescription = "Back",
-                                tint = TmdbCinematicTheme.TextPrimary,
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .padding(start = 4.dp)
-                            )
-                        }*/
-
                         Spacer(modifier = Modifier.width(12.dp))
 
                         Column {
@@ -143,7 +128,10 @@ fun SavedMovieScreen(
                     }
 
                     IconButton(
-                        onClick = { navController.navigate(MovieAppScreen.MOVIE_SEARCH.route) },
+                        onClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            navController.navigate(MovieAppScreen.MOVIE_SEARCH.route)
+                        },
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
@@ -276,7 +264,10 @@ fun SavedMovieScreen(
                                         tint = TmdbCinematicTheme.TextSecondary,
                                         modifier = Modifier
                                             .size(18.dp)
-                                            .clickable { showSwipeTip = false }
+                                            .clickable {
+                                                hapticController.trigger(AppHaptic.Click)
+                                                showSwipeTip = false
+                                            }
                                     )
                                 }
                             }
@@ -284,12 +275,12 @@ fun SavedMovieScreen(
                     }
 
                     // --- WATCHLIST ITEMS ---
-                    // Inside SavedMovieScreen.kt -> LazyColumn -> items(roomData, key = { it.mediaId })
                     items(roomData, key = { it.mediaId }) { movie ->
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { dismissValue ->
                                 when (dismissValue) {
                                     SwipeToDismissBoxValue.EndToStart -> {
+                                        hapticController.trigger(AppHaptic.ToggleOff)
                                         watchListViewModel.removeFromWatchList(movie.mediaId)
                                         Toast.makeText(context, "Removed from Watchlist", Toast.LENGTH_SHORT).show()
                                         true
@@ -306,6 +297,7 @@ fun SavedMovieScreen(
                             backgroundContent = { CinematicDismissBackground(dismissState) },
                             content = {
                                 SavedMovieCard(item = movie) {
+                                    hapticController.trigger(AppHaptic.Click)
                                     navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.mediaId}")
                                 }
                             }
