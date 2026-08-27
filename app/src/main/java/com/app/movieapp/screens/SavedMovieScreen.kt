@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-24 23:20
+ * Last modified: 2026-08-27 23:30
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -298,7 +298,8 @@ fun SavedMovieScreen(
                             content = {
                                 SavedMovieCard(item = movie) {
                                     hapticController.trigger(AppHaptic.Click)
-                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.mediaId}")
+                                    val type = if (movie.mediaType.isNotBlank()) movie.mediaType else "movie"
+                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.mediaId}/$type")
                                 }
                             }
                         )

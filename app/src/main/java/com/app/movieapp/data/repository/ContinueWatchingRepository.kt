@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.Flow
 
 class ContinueWatchingRepository(private val movieDao: MovieDao) {
 
-    val continueWatchingList: Flow<List<ContinueWatchingModel>> = 
+    val continueWatchingList: Flow<List<ContinueWatchingModel>> =
         movieDao.getAllContinueWatching()
 
     suspend fun saveProgress(
@@ -36,7 +36,8 @@ class ContinueWatchingRepository(private val movieDao: MovieDao) {
         currentPositionMs: Long,
         totalDurationMs: Long,
         releaseDate: String = "",
-        rating: Double = 0.0
+        rating: Double = 0.0,
+        mediaType: String = "movie" // <--- ADD THIS PARAMETER
     ) {
         // If watched more than 95%, auto-remove from continue watching
         if (totalDurationMs > 0 && (currentPositionMs.toFloat() / totalDurationMs.toFloat()) >= 0.95f) {
@@ -53,7 +54,8 @@ class ContinueWatchingRepository(private val movieDao: MovieDao) {
             totalDurationMs = totalDurationMs,
             releaseDate = releaseDate,
             rating = rating,
-            lastWatchedTimestamp = System.currentTimeMillis()
+            lastWatchedTimestamp = System.currentTimeMillis(),
+            mediaType = mediaType // <--- PASS IT HERE
         )
         movieDao.upsertContinueWatching(item)
     }

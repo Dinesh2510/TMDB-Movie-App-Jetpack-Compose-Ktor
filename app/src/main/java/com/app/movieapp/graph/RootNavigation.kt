@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-27 22:48
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -19,23 +19,10 @@
 
 package com.app.movieapp.graph
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.app.movieapp.screens.GenreWiseMoviesScreen
-import com.app.movieapp.screens.MainAppScreen
-import com.app.movieapp.screens.MovieDetailsScreen
-import com.app.movieapp.screens.SavedMovieScreen
-import com.app.movieapp.screens.SearchScreen
-import com.app.movieapp.screens.SeeAllScreen
-import com.app.movieapp.screens.SplashScreen
-
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -47,12 +34,12 @@ import com.app.movieapp.screens.LoginScreen
 import com.app.movieapp.screens.MainAppScreen
 import com.app.movieapp.screens.MovieDetailsScreen
 import com.app.movieapp.screens.OnboardingScreen
-import com.app.movieapp.screens.ProfileScreen
 import com.app.movieapp.screens.RegisterScreen
 import com.app.movieapp.screens.SavedMovieScreen
 import com.app.movieapp.screens.SearchScreen
 import com.app.movieapp.screens.SeeAllScreen
 import com.app.movieapp.screens.SplashScreen
+import com.app.movieapp.screens.TvDetailsScreen
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -67,6 +54,7 @@ fun RootNavigation(
     val SeeAllTags = "seeAllTags"
     val genreId = "genId"
     val genreName = "genName"
+    val MEDIA_TYPE_ARG = "mediaType"
 
     NavHost(
         navController = navController,
@@ -76,19 +64,13 @@ fun RootNavigation(
         composable(route = MovieAppScreen.SPLASH.route) {
             SplashScreen({
                 val targetRoute = when {
-
                     isLoggedIn -> MovieAppScreen.MOVIE_HOME.route
-
                     isOnboardingCompleted -> MovieAppScreen.LOGIN.route
-
                     else -> MovieAppScreen.ONBOARDING.route
-
                 }
 
                 navController.navigate(targetRoute) {
-
                     popUpTo(MovieAppScreen.SPLASH.route) { inclusive = true }
-
                 }
             })
         }
@@ -134,24 +116,51 @@ fun RootNavigation(
             )
         }
 
-
-
+        // 1. Two-argument details route declared FIRST to avoid route precedence bugs
         composable(
-            route = MovieAppScreen.MOVIE_HOME_DETAILS.route + "/{$MOVIE_ID_ARG}",
+            route = "${MovieAppScreen.MOVIE_HOME_DETAILS.route}/{$MOVIE_ID_ARG}/{$MEDIA_TYPE_ARG}",
+            arguments = listOf(
+                navArgument(MOVIE_ID_ARG) { type = NavType.StringType },
+                navArgument(MEDIA_TYPE_ARG) {
+                    type = NavType.StringType
+                    defaultValue = "movie"
+                }
+            )
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString(MOVIE_ID_ARG) ?: "1"
+            val mediaType = backStackEntry.arguments?.getString(MEDIA_TYPE_ARG) ?: "movie"
+
+            if (mediaType == "tv") {
+                TvDetailsScreen(
+                    tvId = id.toIntOrNull() ?: 1,
+                    navController = navController
+                )
+            } else {
+                MovieDetailsScreen(
+                    navController = navController,
+                    movieId = id
+                )
+            }
+        }
+
+        // 2. Fallback single-argument route declared SECOND
+        composable(
+            route = "${MovieAppScreen.MOVIE_HOME_DETAILS.route}/{$MOVIE_ID_ARG}",
             arguments = listOf(navArgument(MOVIE_ID_ARG) { type = NavType.StringType })
-        ) {
-            MovieDetailsScreen(navController, it.arguments?.getString(MOVIE_ID_ARG) ?: "1")
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString(MOVIE_ID_ARG) ?: "1"
+            MovieDetailsScreen(navController = navController, movieId = id)
         }
 
         composable(
-            route = MovieAppScreen.MOVIE_SEE_ALL.route + "/{$SeeAllTags}",
+            route = "${MovieAppScreen.MOVIE_SEE_ALL.route}/{$SeeAllTags}",
             arguments = listOf(navArgument(SeeAllTags) { type = NavType.StringType })
         ) {
             SeeAllScreen(it.arguments?.getString(SeeAllTags) ?: "1", navController)
         }
 
         composable(
-            route = MovieAppScreen.MOVIE_GENRE_WISE.route + "/{$genreId}/{$genreName}",
+            route = "${MovieAppScreen.MOVIE_GENRE_WISE.route}/{$genreId}/{$genreName}",
             arguments = listOf(
                 navArgument(genreId) { type = NavType.StringType },
                 navArgument(genreName) { type = NavType.StringType }
@@ -177,7 +186,7 @@ fun RootNavigation(
         }
 
         composable(route = MovieAppScreen.MOVIE_HOME.route) {
-                   MainAppScreen(rootNavController = navController)
+            MainAppScreen(rootNavController = navController)
         }
     }
 }

@@ -462,7 +462,8 @@ fun DisplayMovieData(
                             currentPositionMs = (runtimeMs * 0.25).toLong(),
                             totalDurationMs = runtimeMs,
                             releaseDate = moviesInfo.releaseDate,
-                            rating = moviesInfo.voteAverage
+                            rating = moviesInfo.voteAverage,
+                            mediaType = "movie"
                         )
 
                         // 2. Trigger Video API call & Open Dialog

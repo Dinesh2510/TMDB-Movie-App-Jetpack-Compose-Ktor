@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-24 23:15
+ * Last modified: 2026-08-27 23:45
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -344,7 +344,8 @@ fun SearchScreen(
                                 ) {
                                     hapticController.trigger(AppHaptic.Click)
                                     movie?.id?.let { id ->
-                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$id")
+                                        val type = movie.mediaType ?: if (movie.originalName != null && movie.title == null) "tv" else "movie"
+                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$id/$type")
                                     }
                                 }
                             }

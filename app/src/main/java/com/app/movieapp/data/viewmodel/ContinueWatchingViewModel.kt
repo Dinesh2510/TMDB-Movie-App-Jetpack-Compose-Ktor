@@ -23,6 +23,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.movieapp.data.local.ContinueWatchingModel
 import com.app.movieapp.data.repository.ContinueWatchingRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -47,9 +48,10 @@ class ContinueWatchingViewModel(
         currentPositionMs: Long,
         totalDurationMs: Long,
         releaseDate: String = "",
-        rating: Double = 0.0
+        rating: Double = 0.0,
+        mediaType: String = "movie" // <--- ADD THIS PARAMETER
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.saveProgress(
                 mediaId = mediaId,
                 title = title,
@@ -58,7 +60,8 @@ class ContinueWatchingViewModel(
                 currentPositionMs = currentPositionMs,
                 totalDurationMs = totalDurationMs,
                 releaseDate = releaseDate,
-                rating = rating
+                rating = rating,
+                mediaType = mediaType // <--- PASS IT HERE
             )
         }
     }

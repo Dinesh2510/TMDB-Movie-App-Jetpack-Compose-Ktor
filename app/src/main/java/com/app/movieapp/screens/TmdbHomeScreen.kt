@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-22 15:09
+ * Last modified: 2026-08-27 12:00
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -20,11 +20,13 @@
 package com.app.movieapp.screens
 
 import android.widget.Toast
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,7 +54,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.Star
@@ -65,6 +70,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -77,6 +83,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,12 +93,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.app.movieapp.data.local.ContinueWatchingModel
+import com.app.movieapp.data.local.WatchListModel
+import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.HomeFeedUIState
 import com.app.movieapp.data.viewmodel.HomeViewModel
+import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Genre
 import com.app.movieapp.models.Movies
+import com.app.movieapp.screens.components.CinematicErrorState
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.CenteredCircularProgressIndicator
 import com.app.movieapp.utlis.Constants.Companion.BASE_BACKDROP_IMAGE_URL
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
@@ -98,31 +112,15 @@ import com.app.movieapp.utlis.Constants.Companion.nowPlayingAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.popularAllListScreen
 import com.app.movieapp.utlis.Constants.Companion.upcomingListScreen
 import com.app.movieapp.utlis.GenreImageMapper
-import org.koin.androidx.compose.koinViewModel
-import kotlin.random.Random
-import androidx.compose.animation.core.tween
-
-import androidx.compose.foundation.interaction.collectIsDraggedAsState
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.runtime.LaunchedEffect
-import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
-import kotlinx.coroutines.delay
-
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import com.app.movieapp.data.local.ContinueWatchingModel
-import com.app.movieapp.screens.components.CinematicErrorState
-import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.netflixFamily
 import com.app.movieapp.utlis.rememberHapticController
-
-import com.app.movieapp.data.local.WatchListModel
-import com.app.movieapp.data.viewmodel.WatchListViewModel
+import kotlinx.coroutines.delay
+import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
+import kotlin.random.Random
 
+// --- Helper Extension for Watchlist Conversion ---
 fun Movies.toWatchListModel(): WatchListModel {
     val date = SimpleDateFormat.getDateInstance().format(Date())
     return WatchListModel(
@@ -136,10 +134,26 @@ fun Movies.toWatchListModel(): WatchListModel {
         overview = this.overview,
         genres = this.genres?.joinToString(", ") { it.name } ?: "",
         originalLanguage = this.originalLanguage.ifEmpty { "English" },
-        mediaType = this.mediaType ?: "movie",
+        mediaType = getMediaType(),
         addedOn = date
     )
 }
+
+// Dynamic media_type resolver
+private fun Movies.getMediaType(): String {
+    return when {
+        this.mediaType != null -> this.mediaType
+        this.name != null -> "tv"
+        else -> "movie"
+    }
+}
+
+// Navigation Helper
+private fun NavController.navigateToDetails(movie: Movies) {
+    val type = movie.getMediaType()
+    this.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}/$type")
+}
+
 @Composable
 fun TmdbHomeScreen(
     navController: NavController,
@@ -150,7 +164,7 @@ fun TmdbHomeScreen(
     val homeState by viewModel.homeFeedState.collectAsState()
     val continueWatchingList by continueWatchingViewModel.continueWatchingList.collectAsState()
 
-    // Observe Room Watchlist saved Flow
+    // Observe Watchlist
     val watchListFlow by watchListViewModel.myMovieData
     val watchListItems by watchListFlow.collectAsState(initial = emptyList())
     val savedMediaIds = remember(watchListItems) { watchListItems.map { it.mediaId }.toSet() }
@@ -205,8 +219,8 @@ fun TmdbHomeScreen(
                         item {
                             HeroTrendingPager(
                                 movies = discoverMovies.take(5),
-                                onMovieClick = { movieId ->
-                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$movieId")
+                                onMovieClick = { movie ->
+                                    navController.navigateToDetails(movie)
                                 }
                             )
                         }
@@ -225,13 +239,13 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 4. TRENDING 10 Section
+                    // 4. TRENDING 10 Section (Movies & TV Shows)
                     if (trendingAllMovies.isNotEmpty()) {
                         item {
                             ModernTop10Section(
                                 top10List = trendingAllMovies,
                                 onMovieClick = { movie ->
-                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                    navController.navigateToDetails(movie)
                                 }
                             )
                         }
@@ -258,7 +272,7 @@ fun TmdbHomeScreen(
                                     navController.navigate("${MovieAppScreen.MOVIE_SEE_ALL.route}/$upcomingListScreen")
                                 },
                                 onMovieClick = { movie ->
-                                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                    navController.navigateToDetails(movie)
                                 }
                             )
                         }
@@ -293,7 +307,7 @@ fun TmdbHomeScreen(
                                     MoviePosterGridCard(
                                         movie = movie,
                                         onMovieClick = {
-                                            navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                            navController.navigateToDetails(movie)
                                         }
                                     )
                                 }
@@ -318,7 +332,7 @@ fun TmdbHomeScreen(
                                 MovieDetailedRowCard(
                                     item = movie,
                                     onMovieClick = {
-                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                        navController.navigateToDetails(movie)
                                     }
                                 )
                             }
@@ -354,8 +368,9 @@ fun ContinueWatchSection(
                 ContinueWatchingCard(
                     item = item,
                     onCardClick = {
+                        val type = if (item.mediaType.isNotBlank()) item.mediaType else "movie"
                         navController.navigate(
-                            "${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${item.mediaId}"
+                            "${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${item.mediaId}/$type"
                         )
                     },
                     onRemoveClick = {
@@ -385,7 +400,7 @@ fun HomeHeader(onSearchClick: () -> Unit) {
                 fontSize = 12.sp
             )
             Text(
-                text = "Discover Movies",
+                text = "Discover Movies & Shows",
                 color = TmdbCinematicTheme.TextPrimary,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
@@ -411,15 +426,13 @@ fun HomeHeader(onSearchClick: () -> Unit) {
 }
 
 // --- Hero Banner Pager ---
-
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HeroTrendingPager(
     movies: List<Movies>,
     modifier: Modifier = Modifier,
     autoScrollDurationMs: Long = 3500L,
-    onMovieClick: (Int) -> Unit
+    onMovieClick: (Movies) -> Unit
 ) {
     if (movies.isEmpty()) return
 
@@ -428,10 +441,8 @@ fun HeroTrendingPager(
         pageCount = { movies.size }
     )
 
-    // Detect user dragging to pause auto-scroll
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
 
-    // Smooth auto-scroll loop
     LaunchedEffect(isDragged, movies.size) {
         if (!isDragged && movies.size > 1) {
             while (true) {
@@ -439,9 +450,7 @@ fun HeroTrendingPager(
                 val nextPage = (pagerState.currentPage + 1) % movies.size
                 pagerState.animateScrollToPage(
                     page = nextPage,
-                    animationSpec = tween(
-                        durationMillis = 800 // Smooth slide duration
-                    )
+                    animationSpec = tween(durationMillis = 800)
                 )
             }
         }
@@ -465,7 +474,7 @@ fun HeroTrendingPager(
                     .fillMaxWidth()
                     .height(210.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .clickable { onMovieClick(movie.id) },
+                    .clickable { onMovieClick(movie) },
                 shape = RoundedCornerShape(24.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF131927))
@@ -478,7 +487,6 @@ fun HeroTrendingPager(
                         modifier = Modifier.fillMaxSize()
                     )
 
-                    // Cinematic Gradient Overlay
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -494,7 +502,6 @@ fun HeroTrendingPager(
                             )
                     )
 
-                    // Card Bottom Content
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -521,7 +528,6 @@ fun HeroTrendingPager(
                             )
                         }
 
-                        // Play Button Pill
                         Box(
                             modifier = Modifier
                                 .size(42.dp)
@@ -545,7 +551,6 @@ fun HeroTrendingPager(
             }
         }
 
-        // Pager Indicator Dots
         if (movies.size > 1) {
             Spacer(modifier = Modifier.height(10.dp))
             Row(
@@ -779,7 +784,6 @@ fun TmdbCategoryExploreSection(
         ) {
             items(genres, key = { it.id!! }) { genre ->
                 val imageUrl = GenreImageMapper.getImageUrlForGenre(genre.id)
-                //Log.e("TAG_imageUrl", "TmdbCategoryExploreSection: "+imageUrl )
                 CategoryImageCard(
                     categoryName = genre.name,
                     imageUrl = imageUrl,
@@ -811,7 +815,6 @@ fun CategoryImageCard(
                 .fillMaxSize()
                 .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(16.dp))
         ) {
-            // Background Image
             AsyncImage(
                 model = imageUrl,
                 contentDescription = categoryName,
@@ -821,7 +824,6 @@ fun CategoryImageCard(
                     .clip(RoundedCornerShape(16.dp))
             )
 
-            // Darkening Gradient overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -836,7 +838,6 @@ fun CategoryImageCard(
                     )
             )
 
-            // Title
             Text(
                 text = categoryName,
                 color = Color.White,
@@ -851,7 +852,6 @@ fun CategoryImageCard(
 }
 
 // --- LANDSCAPE SECTION ---
-// --- LANDSCAPE MOVIES SECTION WITH BOOKMARK SUPPORT ---
 @Composable
 fun LandscapeMoviesSection(
     sectionTitle: String,
@@ -886,7 +886,6 @@ fun LandscapeMoviesSection(
     }
 }
 
-// --- LANDSCAPE MOVIE CARD COMPOSABLE ---
 @Composable
 fun LandscapeMovieCard(
     movie: Movies,
@@ -924,7 +923,6 @@ fun LandscapeMovieCard(
                     .clip(RoundedCornerShape(18.dp))
             )
 
-            // Scrim Overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -940,7 +938,6 @@ fun LandscapeMovieCard(
                     )
             )
 
-            // Top Left Rating Badge
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -965,7 +962,6 @@ fun LandscapeMovieCard(
                 )
             }
 
-            // Top Right Interactive Bookmark Button
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -984,7 +980,6 @@ fun LandscapeMovieCard(
                 )
             }
 
-            // Bottom Info Row & Quick Play Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -994,7 +989,7 @@ fun LandscapeMovieCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    movie.title?.let {
+                    movie.displayTitle.let {
                         Text(
                             text = it,
                             color = Color.White,
@@ -1041,113 +1036,6 @@ fun LandscapeMovieCard(
 }
 
 @Composable
-fun ContinueWatchingCardOLD(
-    movie: Movies,
-    onMovieClick: (Movies) -> Unit,
-    progress: Float = remember(movie.id) { Random.nextFloat() * 0.55f + 0.30f }
-) {
-    val backdropUrl = "$BASE_BACKDROP_IMAGE_URL${movie.backdropPath}"
-
-    Card(
-        modifier = Modifier
-            .width(240.dp)
-            .height(135.dp)
-            .clickable { onMovieClick(movie) },
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(18.dp))
-        ) {
-            AsyncImage(
-                model = backdropUrl,
-                contentDescription = movie.displayTitle,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(18.dp))
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.95f)
-                            )
-                        )
-                    )
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = movie.displayTitle,
-                            color = TmdbCinematicTheme.TextPrimary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "Release: ${movie.displayReleaseDate}",
-                            color = TmdbCinematicTheme.TextSecondary,
-                            fontSize = 11.sp,
-                            maxLines = 1
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .clip(CircleShape)
-                            .background(TmdbCinematicTheme.PrimaryActionGradient),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Resume",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .clip(CircleShape),
-                    color = TmdbCinematicTheme.CoralAccent,
-                    trackColor = Color.White.copy(alpha = 0.25f),
-                    strokeCap = StrokeCap.Round
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
 fun ContinueWatchingCard(
     item: ContinueWatchingModel,
     onCardClick: () -> Unit,
@@ -1174,7 +1062,6 @@ fun ContinueWatchingCard(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Dark vignette gradient
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1189,7 +1076,6 @@ fun ContinueWatchingCard(
                     )
             )
 
-            // Play center indicator
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -1207,7 +1093,6 @@ fun ContinueWatchingCard(
                 )
             }
 
-            // Quick Remove 'X' top right
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -1226,7 +1111,6 @@ fun ContinueWatchingCard(
                 )
             }
 
-            // Bottom title + Remaining Time + Progress Bar
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -1252,7 +1136,7 @@ fun ContinueWatchingCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "${item.remainingMinutes}m left",
-                        color =TmdbCinematicTheme.CoralAccent,
+                        color = TmdbCinematicTheme.CoralAccent,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -1260,7 +1144,6 @@ fun ContinueWatchingCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Progress Bar
                 LinearProgressIndicator(
                     progress = { item.progressFraction },
                     modifier = Modifier
@@ -1274,6 +1157,7 @@ fun ContinueWatchingCard(
         }
     }
 }
+
 // --- STANDARD COMPONENTS ---
 @Composable
 fun SectionHeader(title: String, onSeeAllClick: () -> Unit = {}) {
@@ -1363,6 +1247,7 @@ fun MoviePosterGridCard(
         )
     }
 }
+
 @Composable
 fun MovieDetailedRowCard(
     item: Movies,
@@ -1403,7 +1288,6 @@ fun MovieDetailedRowCard(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Movie Poster (Cinema 2:3 Ratio)
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -1421,14 +1305,12 @@ fun MovieDetailedRowCard(
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                // Movie Information
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Title & Language Header
                     Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1449,7 +1331,6 @@ fun MovieDetailedRowCard(
                             )
                         }
 
-                        // Synopsis / Overview (2 lines)
                         if (item.overview.isNotBlank()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -1465,13 +1346,11 @@ fun MovieDetailedRowCard(
                         }
                     }
 
-                    // Metadata Badges Footer (Rating, Year, Language)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
-                        // Rating Pill
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
@@ -1496,13 +1375,11 @@ fun MovieDetailedRowCard(
                             )
                         }
 
-                        // Release Year Badge
                         val releaseYear = item.displayReleaseDate.take(4)
                         if (releaseYear.isNotBlank()) {
                             MetadataPill(text = releaseYear)
                         }
 
-                        // Original Language Badge
                         if (item.originalLanguage.isNotBlank()) {
                             MetadataPill(text = item.originalLanguage.uppercase())
                         }
@@ -1529,10 +1406,4 @@ private fun MetadataPill(text: String) {
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
         )
     }
-}
-
-@Preview(showBackground = true, widthDp = 412, heightDp = 850)
-@Composable
-fun TmdbHomeScreenPreview() {
-    //TmdbHomeScreen()
 }

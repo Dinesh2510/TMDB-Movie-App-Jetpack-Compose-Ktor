@@ -25,13 +25,17 @@ import com.app.movieapp.data.repository.HomeRepository
 import com.app.movieapp.data.repository.MovieDetailsRepository
 import com.app.movieapp.data.repository.MyListMovieRepository
 import com.app.movieapp.data.repository.SearchRepository
+import com.app.movieapp.data.repository.TvShowRepository
+import com.app.movieapp.data.repository.TvShowRepositoryImpl
 import org.koin.core.module.dsl.singleOf
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val repositoryModule = module {
     singleOf(::MyListMovieRepository)
     singleOf(::HomeRepository)
     singleOf(::MovieDetailsRepository)
-    singleOf(::SearchRepository) // Added missing repository dependency
-    singleOf(::ContinueWatchingRepository) // Added
+    singleOf(::SearchRepository)
+    singleOf(::ContinueWatchingRepository)
+    singleOf(::TvShowRepositoryImpl) bind TvShowRepository::class
 }

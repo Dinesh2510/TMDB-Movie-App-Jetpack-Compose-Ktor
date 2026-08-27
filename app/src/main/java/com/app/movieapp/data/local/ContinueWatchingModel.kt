@@ -24,8 +24,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "continue_watching_table")
 data class ContinueWatchingModel(
-    @PrimaryKey
-    val mediaId: Int,
+    @PrimaryKey val mediaId: Int,
     val title: String,
     val posterPath: String?,
     val backdropPath: String?,
@@ -33,7 +32,9 @@ data class ContinueWatchingModel(
     val totalDurationMs: Long,
     val releaseDate: String = "",
     val rating: Double = 0.0,
-    val lastWatchedTimestamp: Long = System.currentTimeMillis()
+    val lastWatchedTimestamp: Long = System.currentTimeMillis(),
+    val mediaType: String = "movie", // <--- Ensure mediaType is defined here
+
 ) {
     val progressFraction: Float
         get() = if (totalDurationMs > 0) {

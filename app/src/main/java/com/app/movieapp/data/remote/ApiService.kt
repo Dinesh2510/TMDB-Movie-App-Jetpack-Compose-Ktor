@@ -25,6 +25,9 @@ import com.app.movieapp.data.remote.response.MovieDetailsDTO
 import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.data.remote.response.MultiSearchResponse
 import com.app.movieapp.data.remote.response.VideoResponse
+import com.app.movieapp.models.SeasonDetailsDTO
+import com.app.movieapp.models.TvShowDetailsDTO
+import com.app.movieapp.models.TvShowResponse
 import com.app.movieapp.utlis.Constants.Companion.API_KEY
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -211,7 +214,7 @@ class ApiService(private val client: HttpClient) {
         page: Int = 1,
         apiKey: String = API_KEY,
         language: String = "en-US"
-    ): MovieResponse = client.get("tv/$filmId/similar") {
+    ): TvShowResponse = client.get("tv/$filmId/similar") {
         parameter("page", page)
         parameter("api_key", apiKey)
         parameter("language", language)
@@ -291,4 +294,28 @@ class ApiService(private val client: HttpClient) {
         parameter("api_key", apiKey)
         parameter("language", language)
     }.body()
+
+    // Fetch TV Show Details (Includes overall season count & list)
+    suspend fun getTvShowDetails(
+        tvId: Int,
+        appendToResponse: String = "videos,credits",
+        apiKey: String = API_KEY,
+        language: String = "en-US"
+    ): TvShowDetailsDTO = client.get("tv/$tvId") {
+        parameter("append_to_response", appendToResponse)
+        parameter("api_key", apiKey)
+        parameter("language", language)
+    }.body()
+
+    // Fetch Episodes for a specific Season
+    suspend fun getSeasonDetails(
+        tvId: Int,
+        seasonNumber: Int,
+        apiKey: String = API_KEY,
+        language: String = "en-US"
+    ): SeasonDetailsDTO = client.get("tv/$tvId/season/$seasonNumber") {
+        parameter("api_key", apiKey)
+        parameter("language", language)
+    }.body()
+
 }

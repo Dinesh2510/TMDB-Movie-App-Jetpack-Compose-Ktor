@@ -25,6 +25,7 @@ import com.app.movieapp.data.viewmodel.HomeViewModel
 import com.app.movieapp.data.viewmodel.MovieDetailsViewModel
 import com.app.movieapp.data.viewmodel.SearchViewModel
 import com.app.movieapp.data.viewmodel.TopRatedViewModel
+import com.app.movieapp.data.viewmodel.TvDetailsViewModel
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -37,5 +38,6 @@ val viewModelModule = module {
     viewModelOf(::ContinueWatchingViewModel) // Added
     viewModelOf (::TopRatedViewModel)
     viewModelOf (::AiChatViewModel)
+    viewModelOf (::TvDetailsViewModel)
 
 }
