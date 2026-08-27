@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-27 22:34
- * Last modified: 2026-08-27 22:34
+ * Last modified: 2026-08-27 23:55
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -104,9 +104,11 @@ import com.app.movieapp.screens.components.CinematicErrorState
 import com.app.movieapp.screens.components.HomeSmallThumb
 import com.app.movieapp.screens.components.VideoSelectionDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
 import com.app.movieapp.utlis.Constants.Companion.BASE_BACKDROP_IMAGE_URL
 import com.app.movieapp.utlis.Constants.Companion.BASE_POSTER_IMAGE_URL
 import com.app.movieapp.utlis.MovieState
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -123,8 +125,11 @@ fun TvDetailsScreen(
     watchListViewModel: WatchListViewModel = koinViewModel(),
     continueWatchingViewModel: ContinueWatchingViewModel = koinViewModel()
 ) {
+    val hapticController = rememberHapticController()
+
     LaunchedEffect(tvId) {
         viewModel.loadTvShowDetails(tvId)
+        watchListViewModel.exist(tvId)
     }
 
     val uiState by viewModel.uiState.collectAsState()
@@ -132,6 +137,7 @@ fun TvDetailsScreen(
     val episodesState by viewModel.episodesState.collectAsState()
     val videoState by viewModel.videoResponses.collectAsState()
     val similarTvState by viewModel.similarTvState.collectAsState()
+    val exist = watchListViewModel.exist.value
 
     Box(
         modifier = Modifier
@@ -148,7 +154,10 @@ fun TvDetailsScreen(
             is TvDetailsUIState.Error -> {
                 CinematicErrorState(
                     errorMessage = stringResource(id = state.messageRes),
-                    onRetryClick = { viewModel.loadTvShowDetails(tvId) }
+                    onRetryClick = {
+                        hapticController.trigger(AppHaptic.Click)
+                        viewModel.loadTvShowDetails(tvId)
+                    }
                 )
             }
 
@@ -161,10 +170,13 @@ fun TvDetailsScreen(
                     similarTvState = similarTvState,
                     videoState = videoState,
                     navController = navController,
-                    onWatchlistToggle = { item, isWatchlisted ->
-                        if (isWatchlisted) {
+                    isWatchlisted = exist != 0,
+                    onWatchlistToggle = { item ->
+                        if (exist != 0) {
+                            hapticController.trigger(AppHaptic.ToggleOff)
                             watchListViewModel.removeFromWatchList(item.mediaId)
                         } else {
+                            hapticController.trigger(AppHaptic.ToggleOn)
                             watchListViewModel.addToWatchList(item)
                         }
                     },
@@ -182,8 +194,10 @@ fun TvDetailsScreen(
                         )
                     },
                     onFetchVideos = { id -> viewModel.fetchTvShowVideos(id) },
-                    onSeasonSelect = { seasonNum -> viewModel.selectSeason(seasonNum) },
-                    isWatchlisted = watchListViewModel.exist.value != 0
+                    onSeasonSelect = { seasonNum ->
+                        hapticController.trigger(AppHaptic.SegmentTick)
+                        viewModel.selectSeason(seasonNum)
+                    }
                 )
             }
         }
@@ -199,12 +213,13 @@ private fun TvDetailsContent(
     similarTvState: MovieState<List<TvShowDetailsDTO>>,
     videoState: MovieState<VideoResponse>,
     navController: NavHostController,
-    onWatchlistToggle: (WatchListModel, Boolean) -> Unit,
+    isWatchlisted: Boolean,
+    onWatchlistToggle: (WatchListModel) -> Unit,
     onSaveProgress: (ProgressSaveData) -> Unit,
     onFetchVideos: (Int) -> Unit,
-    onSeasonSelect: (Int) -> Unit,
-    isWatchlisted: Boolean
+    onSeasonSelect: (Int) -> Unit
 ) {
+    val hapticController = rememberHapticController()
     var activeTab by remember { mutableStateOf(TvDetailsTab.EPISODES) }
     var dropdownExpanded by remember { mutableStateOf(false) }
 
@@ -221,10 +236,10 @@ private fun TvDetailsContent(
                 tvDetails = tvDetails,
                 navController = navController,
                 videoState = videoState,
+                isWatchlisted = isWatchlisted,
                 onWatchlistToggle = onWatchlistToggle,
                 onSaveProgress = onSaveProgress,
-                onFetchVideos = onFetchVideos,
-                isWatchlisted = isWatchlisted
+                onFetchVideos = onFetchVideos
             )
         }
 
@@ -306,7 +321,10 @@ private fun TvDetailsContent(
                         .clip(RoundedCornerShape(12.dp))
                         .background(TmdbCinematicTheme.GlassSurface)
                         .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, RoundedCornerShape(12.dp))
-                        .clickable { dropdownExpanded = true }
+                        .clickable {
+                            hapticController.trigger(AppHaptic.Click)
+                            dropdownExpanded = true
+                        }
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Row(
@@ -366,7 +384,10 @@ private fun TvDetailsContent(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
-                            .clickable { activeTab = tab }
+                            .clickable {
+                                hapticController.trigger(AppHaptic.SegmentTick)
+                                activeTab = tab
+                            }
                             .padding(vertical = 8.dp)
                     ) {
                         Text(
@@ -421,7 +442,26 @@ private fun TvDetailsContent(
                     is MovieState.Success -> {
                         val episodes = episodesState.data ?: emptyList()
                         items(episodes) { episode ->
-                            EpisodeItemCard(episode = episode)
+                            EpisodeItemCard(
+                                episode = episode,
+                                onClick = {
+                                    hapticController.trigger(AppHaptic.Confirm)
+                                    val runtimeMs = (episode.runtime ?: 45) * 60 * 1000L
+                                    onSaveProgress(
+                                        ProgressSaveData(
+                                            mediaId = tvDetails.id,
+                                            title = "${tvDetails.name} - S${selectedSeasonNumber}E${episode.episodeNumber}",
+                                            posterPath = episode.stillPath ?: tvDetails.posterPath,
+                                            backdropPath = tvDetails.backdropPath,
+                                            currentPositionMs = (runtimeMs * 0.25).toLong(),
+                                            totalDurationMs = runtimeMs,
+                                            releaseDate = episode.airDate ?: tvDetails.firstAirDate.orEmpty(),
+                                            rating = episode.voteAverage
+                                        )
+                                    )
+                                    onFetchVideos(tvDetails.id)
+                                }
+                            )
                         }
                     }
                 }
@@ -488,42 +528,17 @@ private fun TvDetailsContent(
 }
 
 @Composable
-fun SimilarTvMediaSection(
-    mediaList: List<TvShowDetailsDTO>,
-    navController: NavHostController
-) {
-    Column {
-        Text(
-            text = "Customers also watched",
-            color = TmdbCinematicTheme.TextPrimary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(mediaList.size) { index ->
-                HomeSmallThumb(
-                    BASE_POSTER_IMAGE_URL + mediaList[index].posterPath
-                ) {
-                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${mediaList[index].id}/tv")
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun PrimeTvHeroHeader(
     tvDetails: TvShowDetailsDTO,
     navController: NavHostController,
     videoState: MovieState<VideoResponse>,
-    onWatchlistToggle: (WatchListModel, Boolean) -> Unit,
+    isWatchlisted: Boolean,
+    onWatchlistToggle: (WatchListModel) -> Unit,
     onSaveProgress: (ProgressSaveData) -> Unit,
-    onFetchVideos: (Int) -> Unit,
-    isWatchlisted: Boolean
+    onFetchVideos: (Int) -> Unit
 ) {
     val context = LocalContext.current
+    val hapticController = rememberHapticController()
     val date = remember { SimpleDateFormat.getDateInstance().format(Date()) }
     var showTrailerDialog by remember { mutableStateOf(false) }
 
@@ -576,7 +591,10 @@ fun PrimeTvHeroHeader(
         )
 
         IconButton(
-            onClick = { navController.popBackStack() },
+            onClick = {
+                hapticController.trigger(AppHaptic.Click)
+                navController.popBackStack()
+            },
             modifier = Modifier
                 .statusBarsPadding()
                 .padding(start = 16.dp, top = 8.dp)
@@ -619,6 +637,7 @@ fun PrimeTvHeroHeader(
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color.White)
                     .clickable {
+                        hapticController.trigger(AppHaptic.Confirm)
                         val runtimeMs = 45 * 60 * 1000L
                         onSaveProgress(
                             ProgressSaveData(
@@ -687,8 +706,10 @@ fun PrimeTvHeroHeader(
                 PrimeActionButton(
                     icon = Icons.Default.Refresh,
                     label = "Start over",
+                    isHighlighted = false,
                     modifier = Modifier.weight(1f)
                 ) {
+                    hapticController.trigger(AppHaptic.Click)
                     onFetchVideos(tvDetails.id)
                     showTrailerDialog = true
                 }
@@ -696,18 +717,22 @@ fun PrimeTvHeroHeader(
                 PrimeActionButton(
                     icon = Icons.Default.Movie,
                     label = "Trailer",
+                    isHighlighted = false,
                     modifier = Modifier.weight(1f)
                 ) {
+                    hapticController.trigger(AppHaptic.Click)
                     onFetchVideos(tvDetails.id)
                     showTrailerDialog = true
                 }
 
+                // Dynamic Watchlist Button
                 PrimeActionButton(
                     icon = if (isWatchlisted) Icons.Default.Check else Icons.Default.Add,
                     label = if (isWatchlisted) "In Watchlist" else "Watchlist",
+                    isHighlighted = isWatchlisted,
                     modifier = Modifier.weight(1.2f)
                 ) {
-                    onWatchlistToggle(watchListItem, isWatchlisted)
+                    onWatchlistToggle(watchListItem)
                     val msg = if (isWatchlisted) "Removed from Watchlist" else "Added to Watchlist"
                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 }
@@ -715,8 +740,10 @@ fun PrimeTvHeroHeader(
                 PrimeActionButton(
                     icon = Icons.Default.Share,
                     label = "Share",
+                    isHighlighted = false,
                     modifier = Modifier.weight(1f)
                 ) {
+                    hapticController.trigger(AppHaptic.Click)
                     val shareIntent = Intent().apply {
                         action = Intent.ACTION_SEND
                         putExtra(Intent.EXTRA_TEXT, "Check out ${tvDetails.name} on TMDB App!")
@@ -733,6 +760,7 @@ fun PrimeTvHeroHeader(
             videoState = videoState,
             onDismiss = { showTrailerDialog = false },
             onVideoSelected = { video ->
+                hapticController.trigger(AppHaptic.Click)
                 showTrailerDialog = false
                 val intent = Intent(
                     Intent.ACTION_VIEW,
@@ -748,6 +776,7 @@ fun PrimeTvHeroHeader(
 fun PrimeActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
+    isHighlighted: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -755,8 +784,15 @@ fun PrimeActionButton(
         modifier = modifier
             .height(38.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(TmdbCinematicTheme.GlassSurface)
-            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+            .background(
+                if (isHighlighted) TmdbCinematicTheme.CoralAccent.copy(alpha = 0.25f)
+                else TmdbCinematicTheme.GlassSurface
+            )
+            .border(
+                width = 1.dp,
+                color = if (isHighlighted) TmdbCinematicTheme.CoralAccent else Color.White.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(8.dp)
+            )
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
@@ -768,13 +804,13 @@ fun PrimeActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = Color.White,
+                tint = if (isHighlighted) TmdbCinematicTheme.CoralAccent else Color.White,
                 modifier = Modifier.size(14.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = label,
-                color = Color.White,
+                color = if (isHighlighted) TmdbCinematicTheme.CoralAccent else Color.White,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -785,8 +821,37 @@ fun PrimeActionButton(
 }
 
 // ==========================================
-// CAST SECTIONS
+// CAST & SIMILAR SECTIONS
 // ==========================================
+
+@Composable
+fun SimilarTvMediaSection(
+    mediaList: List<TvShowDetailsDTO>,
+    navController: NavHostController
+) {
+    val hapticController = rememberHapticController()
+
+    Column {
+        Text(
+            text = "Customers also watched",
+            color = TmdbCinematicTheme.TextPrimary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(mediaList.size) { index ->
+                HomeSmallThumb(
+                    BASE_POSTER_IMAGE_URL + mediaList[index].posterPath
+                ) {
+                    hapticController.trigger(AppHaptic.Click)
+                    navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${mediaList[index].id}/tv")
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun CastMediaSectionTV(castList: List<Cast>) {
@@ -863,7 +928,10 @@ fun CastMemberAvatarItemTV(cast: Cast) {
 }
 
 @Composable
-fun EpisodeItemCard(episode: EpisodeDTO) {
+fun EpisodeItemCard(
+    episode: EpisodeDTO,
+    onClick: () -> Unit = {}
+) {
     val shape = RoundedCornerShape(12.dp)
     Row(
         modifier = Modifier
@@ -872,6 +940,7 @@ fun EpisodeItemCard(episode: EpisodeDTO) {
             .clip(shape)
             .background(TmdbCinematicTheme.GlassSurface)
             .border(1.dp, TmdbCinematicTheme.GlassBorderGradient, shape)
+            .clickable { onClick() }
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -986,11 +1055,11 @@ private fun PrimeTvDetailsScreenPreview() {
             similarTvState = MovieState.Success(emptyList()),
             videoState = MovieState.Loading,
             navController = rememberNavController(),
-            onWatchlistToggle = { _, _ -> },
+            isWatchlisted = true,
+            onWatchlistToggle = {},
             onSaveProgress = {},
             onFetchVideos = {},
-            onSeasonSelect = {},
-            isWatchlisted = false
+            onSeasonSelect = {}
         )
     }
 }
