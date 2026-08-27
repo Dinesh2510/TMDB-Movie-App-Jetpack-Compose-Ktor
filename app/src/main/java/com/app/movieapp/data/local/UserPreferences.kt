@@ -41,6 +41,9 @@ class UserPreferences(
         private val REGISTERED_NAME = stringPreferencesKey("registered_name")
         private val REGISTERED_EMAIL = stringPreferencesKey("registered_email")
         private val REGISTERED_PASSWORD = stringPreferencesKey("registered_password")
+
+        // ── Haptic Toggle Preference ──────────────────────────────
+        private val IS_HAPTICS_ENABLED = booleanPreferencesKey("is_haptics_enabled")
     }
 
     val isOnboardingCompleted: Flow<Boolean> = dataStore.data.map { prefs ->
@@ -57,6 +60,17 @@ class UserPreferences(
 
     val userName: Flow<String> = dataStore.data.map { prefs ->
         prefs[REGISTERED_NAME] ?: ""
+    }
+
+    // ── Haptic Preference Flow & Setter (Enabled by default) ──
+    val isHapticsEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[IS_HAPTICS_ENABLED] ?: true
+    }
+
+    suspend fun setHapticsEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[IS_HAPTICS_ENABLED] = enabled
+        }
     }
 
     suspend fun registerUser(name: String, email: String, pass: String) {

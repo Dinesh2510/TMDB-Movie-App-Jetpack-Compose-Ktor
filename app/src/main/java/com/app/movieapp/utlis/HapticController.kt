@@ -31,9 +31,13 @@ package com.app.movieapp.utlis
 import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
+import com.app.movieapp.data.viewmodel.AuthViewModel
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Every semantic haptic event used across the app, mapped 1:1 to
@@ -116,13 +120,19 @@ private fun AppHaptic.toConstant(): Int = when (this) {
  * handled automatically by AndroidX (see HapticFeedbackConstantsCompat
  * .getFeedbackConstantOrFallback internally).
  */
-class HapticController(private val view: View) {
+/**
+ * Controller enforcing the global `isHapticsEnabled` flag from DataStore.
+ */
+class HapticController(
+    private val view: View,
+    private val isHapticsEnabled: Boolean
+) {
     fun trigger(type: AppHaptic) {
-        if (type == AppHaptic.None) return
+        // Global Guard: If turned off by user setting, skip execution entirely
+        if (!isHapticsEnabled || type == AppHaptic.None) return
         ViewCompat.performHapticFeedback(view, type.toConstant())
     }
 
-    /** Ignores the view's "haptics enabled" user setting — use sparingly. */
     fun triggerForced(type: AppHaptic) {
         if (type == AppHaptic.None) return
         ViewCompat.performHapticFeedback(
@@ -134,11 +144,14 @@ class HapticController(private val view: View) {
 }
 
 @Composable
-@ReadOnlyComposable
 fun rememberHapticController(): HapticController {
     val view = LocalView.current
-    return HapticController(view)
-}/*
+    val authViewModel: AuthViewModel = koinViewModel()
+    val isHapticsEnabled by authViewModel.isHapticsEnabled.collectAsState(initial = true)
+
+    return HapticController(view, isHapticsEnabled)
+}
+/*
 val haptics = rememberHapticController()
 haptics.trigger(AppHaptic.Confirm)
 

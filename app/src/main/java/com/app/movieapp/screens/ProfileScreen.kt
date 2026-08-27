@@ -48,10 +48,13 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -74,6 +77,8 @@ import com.app.movieapp.data.viewmodel.ContinueWatchingViewModel
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.screens.components.CinematicDialog
 import com.app.movieapp.ui.theme.TmdbCinematicTheme
+import com.app.movieapp.utlis.AppHaptic
+import com.app.movieapp.utlis.rememberHapticController
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -84,16 +89,15 @@ fun ProfileScreen(
     onWatchlistClick: () -> Unit = {},
     onLogoutClick: () -> Unit
 ) {
-    // Collect StateFlow safely from ViewModels
+    val hapticController = rememberHapticController()
     val userName by authViewModel.userName.collectAsState()
     val watchlistData by watchListViewModel.myMovieData.value.collectAsState(initial = emptyList())
     val continueWatchingData by continueWatchingViewModel.continueWatchingList.collectAsState()
+    val isHapticsEnabled by authViewModel.isHapticsEnabled.collectAsState(initial = true)
 
-    // State manager for logout dialog and sub-sections
     var showLogoutDialog by remember { mutableStateOf(false) }
     var activeSection by remember { mutableStateOf<ProfileSection?>(null) }
 
-    // RENDER SUB-SECTION IF SELECTED
     activeSection?.let { section ->
         ProfileSectionScreens(
             section = section,
@@ -103,7 +107,6 @@ fun ProfileScreen(
         return
     }
 
-    // LOGOUT CONFIRMATION DIALOG
     CinematicDialog(
         showDialog = showLogoutDialog,
         title = "Log Out?",
@@ -122,7 +125,6 @@ fun ProfileScreen(
         }
     )
 
-    // MAIN PROFILE VIEW
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -135,10 +137,9 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding( bottom = 100.dp),
+                .padding(bottom = 100.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header Title
             Text(
                 text = "Profile",
                 color = TmdbCinematicTheme.TextPrimary,
@@ -149,7 +150,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // USER AVATAR & INFO CARD
+            // USER AVATAR CARD
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -192,7 +193,10 @@ fun ProfileScreen(
                                 .clip(CircleShape)
                                 .background(TmdbCinematicTheme.CoralAccent)
                                 .border(2.dp, Color(0xFF0F0E17), CircleShape)
-                                .clickable { activeSection = ProfileSection.PERSONAL_DETAILS },
+                                .clickable {
+                                    hapticController.trigger(AppHaptic.Click)
+                                    activeSection = ProfileSection.PERSONAL_DETAILS
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -227,7 +231,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // STATS ROW (DYNAMIC COUNTS)
+            // STATS ROW
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -237,7 +241,10 @@ fun ProfileScreen(
                     value = watchlistData.size.toString(),
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { onWatchlistClick() }
+                        .clickable {
+                            hapticController.trigger(AppHaptic.Click)
+                            onWatchlistClick()
+                        }
                 )
                 ProfileStatCard(
                     title = "Watching",
@@ -253,7 +260,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ACCOUNT SETTINGS SECTION
+            // ACCOUNT SETTINGS
             Text(
                 text = "ACCOUNT SETTINGS",
                 color = TmdbCinematicTheme.TextSecondary,
@@ -273,50 +280,79 @@ fun ProfileScreen(
                 colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface)
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    // 1. Personal Details Trigger
+                    // Personal Details
                     ProfileOptionTile(
                         icon = Icons.Filled.PersonOutline,
                         title = "Personal Details",
-                        onClick = { activeSection = ProfileSection.PERSONAL_DETAILS }
+                        onClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            activeSection = ProfileSection.PERSONAL_DETAILS
+                        }
                     )
                     ProfileDivider()
 
-                    // 2. Watchlist Trigger
+                    // Watchlist
                     ProfileOptionTile(
                         icon = Icons.Filled.BookmarkBorder,
                         title = "My Watchlist",
-                        onClick = onWatchlistClick
+                        onClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            onWatchlistClick()
+                        }
                     )
                     ProfileDivider()
 
-                    // 3. Notifications Trigger
+                    // Haptic Feedback Global Switch Tile
+                    ProfileSwitchTile(
+                        icon = Icons.Filled.Vibration,
+                        title = "Haptic Feedback",
+                        checked = isHapticsEnabled,
+                        onCheckedChange = { enabled ->
+                            authViewModel.setHapticsEnabled(enabled)
+                            if (enabled) {
+                                hapticController.triggerForced(AppHaptic.ToggleOn)
+                            }
+                        }
+                    )
+                    ProfileDivider()
+
+                    // Notifications
                     ProfileOptionTile(
                         icon = Icons.Filled.NotificationsNone,
                         title = "Notifications",
-                        onClick = { activeSection = ProfileSection.NOTIFICATIONS }
+                        onClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            activeSection = ProfileSection.NOTIFICATIONS
+                        }
                     )
                     ProfileDivider()
 
-                    // 4. Security & Privacy Trigger
+                    // Security & Privacy
                     ProfileOptionTile(
                         icon = Icons.Filled.Security,
                         title = "Security & Privacy",
-                        onClick = { activeSection = ProfileSection.SECURITY_PRIVACY }
+                        onClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            activeSection = ProfileSection.SECURITY_PRIVACY
+                        }
                     )
                     ProfileDivider()
 
-                    // 5. About App Trigger
+                    // About App
                     ProfileOptionTile(
                         icon = Icons.Filled.Info,
                         title = "About App",
-                        onClick = { activeSection = ProfileSection.ABOUT_APP }
+                        onClick = {
+                            hapticController.trigger(AppHaptic.Click)
+                            activeSection = ProfileSection.ABOUT_APP
+                        }
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // LOGOUT BUTTON (TRIGGERS DIALOG)
+            // LOGOUT BUTTON
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -325,6 +361,7 @@ fun ProfileScreen(
                     .background(Color(0xFF2C151B))
                     .border(1.dp, TmdbCinematicTheme.CoralAccent.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                     .clickable {
+                        hapticController.trigger(AppHaptic.Click)
                         showLogoutDialog = true
                     },
                 contentAlignment = Alignment.Center
@@ -349,7 +386,57 @@ fun ProfileScreen(
     }
 }
 
-// --- HELPER COMPONENTS ---
+// ── PROFILE SWITCH TILE COMPOSABLE ─────────────────────────────────
+@Composable
+fun ProfileSwitchTile(
+    icon: ImageVector,
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = TmdbCinematicTheme.TextPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = title,
+                color = TmdbCinematicTheme.TextPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = TmdbCinematicTheme.CoralAccent,
+                uncheckedThumbColor = TmdbCinematicTheme.TextSecondary,
+                uncheckedTrackColor = Color.White.copy(alpha = 0.1f)
+            )
+        )
+    }
+}
 
 @Composable
 fun ProfileStatCard(title: String, value: String, modifier: Modifier = Modifier) {
@@ -436,7 +523,6 @@ fun ProfileDivider() {
     )
 }
 
-// --- COMPOSE PREVIEW ---
 @Preview(showBackground = true, widthDp = 412, heightDp = 850)
 @Composable
 fun ProfileScreenPreview() {

@@ -22,6 +22,7 @@ package com.app.movieapp.data.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.movieapp.data.local.UserPreferences
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -30,7 +31,14 @@ import kotlinx.coroutines.launch
 class AuthViewModel(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
+    // Inside AuthViewModel.kt
+    val isHapticsEnabled: Flow<Boolean> = userPreferences.isHapticsEnabled
 
+    fun setHapticsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferences.setHapticsEnabled(enabled)
+        }
+    }
     val isLoggedIn: StateFlow<Boolean> = userPreferences.isLoggedIn.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
