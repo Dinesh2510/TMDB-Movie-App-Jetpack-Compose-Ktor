@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-22 15:27
- * Last modified: 2026-08-24 23:35
+ * Last modified: 2026-08-30 00:10
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -111,7 +111,6 @@ fun TopRatedScreen(
 
     var hasConfirmedLoad by remember { mutableStateOf(false) }
 
-    // Haptic on pagination refresh outcome
     LaunchedEffect(refreshState) {
         when (refreshState) {
             is LoadState.NotLoading -> {
@@ -127,7 +126,6 @@ fun TopRatedScreen(
         }
     }
 
-    // Haptic on pagination append error
     LaunchedEffect(appendState) {
         if (appendState is LoadState.Error) {
             hapticController.trigger(AppHaptic.Reject)
@@ -155,7 +153,6 @@ fun TopRatedScreen(
 
             // 2. Main Content / Loader / Error State
             when {
-                // Initial Loading State
                 refreshState is LoadState.Loading && currentItems.itemCount == 0 -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -165,7 +162,6 @@ fun TopRatedScreen(
                     }
                 }
 
-                // Initial Error State (e.g. Offline)
                 refreshState is LoadState.Error -> {
                     val error = (refreshState as LoadState.Error).error
                     val errorRes = when (error) {
@@ -182,7 +178,6 @@ fun TopRatedScreen(
                     )
                 }
 
-                // Paginated Grid
                 else -> {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
@@ -197,9 +192,11 @@ fun TopRatedScreen(
                                 val heroMovies = (0..4).mapNotNull { currentItems[it] }
                                 HostarHeroSlider(
                                     movies = heroMovies,
-                                    onMovieClick = { id ->
+                                    selectedTab = selectedTab,
+                                    onMovieClick = { movie ->
                                         hapticController.trigger(AppHaptic.Click)
-                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/$id")
+                                        val type = if (selectedTab == ContentType.TV_SHOWS) "tv" else movie.getMediaType()
+                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}/$type")
                                     }
                                 )
                             }
@@ -239,7 +236,8 @@ fun TopRatedScreen(
                                     movie = movie,
                                     onMovieClick = {
                                         hapticController.trigger(AppHaptic.Click)
-                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}")
+                                        val type = if (selectedTab == ContentType.TV_SHOWS) "tv" else movie.getMediaType()
+                                        navController.navigate("${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${movie.id}/$type")
                                     }
                                 )
                             }
@@ -289,7 +287,6 @@ private fun SegmentedTabBar(
                 .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // TV Shows Tab
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -327,7 +324,6 @@ private fun SegmentedTabBar(
                 }
             }
 
-            // Movies Tab
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -373,7 +369,8 @@ private fun SegmentedTabBar(
 @Composable
 private fun HostarHeroSlider(
     movies: List<Movies>,
-    onMovieClick: (Int) -> Unit
+    selectedTab: ContentType,
+    onMovieClick: (Movies) -> Unit
 ) {
     if (movies.isEmpty()) return
 
@@ -381,7 +378,6 @@ private fun HostarHeroSlider(
     val pagerState = rememberPagerState(pageCount = { movies.size })
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
 
-    // Tactile tick when user drags and snaps to a new card
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect {
             if (isDragged) {
@@ -390,7 +386,6 @@ private fun HostarHeroSlider(
         }
     }
 
-    // Smooth auto-scroll loop
     LaunchedEffect(isDragged, movies.size) {
         if (!isDragged && movies.size > 1) {
             while (true) {
@@ -419,7 +414,6 @@ private fun HostarHeroSlider(
                 fontWeight = FontWeight.Black
             )
 
-            // Dynamic Dot Indicators
             if (movies.size > 1) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -455,7 +449,7 @@ private fun HostarHeroSlider(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(260.dp)
-                    .clickable { onMovieClick(movie.id) },
+                    .clickable { onMovieClick(movie) },
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = TmdbCinematicTheme.GlassSurface)
             ) {
@@ -467,7 +461,6 @@ private fun HostarHeroSlider(
                         modifier = Modifier.fillMaxSize()
                     )
 
-                    // Scrim Gradient
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -482,7 +475,6 @@ private fun HostarHeroSlider(
                             )
                     )
 
-                    // Top Status Badge
                     Box(
                         modifier = Modifier
                             .padding(14.dp)
@@ -498,7 +490,6 @@ private fun HostarHeroSlider(
                         )
                     }
 
-                    // Floating Action Buttons (Right)
                     Column(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -525,7 +516,7 @@ private fun HostarHeroSlider(
                                 .background(TmdbCinematicTheme.PrimaryActionGradient)
                                 .clickable {
                                     hapticController.trigger(AppHaptic.Confirm)
-                                    onMovieClick(movie.id)
+                                    onMovieClick(movie)
                                 },
                             contentAlignment = Alignment.Center
                         ) {
@@ -533,7 +524,6 @@ private fun HostarHeroSlider(
                         }
                     }
 
-                    // Bottom Movie Meta Details
                     Column(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -589,7 +579,6 @@ private fun TopRatedGridCard(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Top Left Year Pill
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -606,7 +595,6 @@ private fun TopRatedGridCard(
                     )
                 }
 
-                // Top Right Rating Badge
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -633,7 +621,6 @@ private fun TopRatedGridCard(
                 }
             }
 
-            // Title Label
             Text(
                 text = movie.displayTitle,
                 color = Color.White,

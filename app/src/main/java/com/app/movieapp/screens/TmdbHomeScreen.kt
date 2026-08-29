@@ -140,7 +140,7 @@ fun Movies.toWatchListModel(): WatchListModel {
 }
 
 // Dynamic media_type resolver
-private fun Movies.getMediaType(): String {
+ fun Movies.getMediaType(): String {
     return when {
         this.mediaType != null -> this.mediaType
         this.name != null -> "tv"
@@ -368,7 +368,7 @@ fun ContinueWatchSection(
                 ContinueWatchingCard(
                     item = item,
                     onCardClick = {
-                        val type = if (item.mediaType.isNotBlank()) item.mediaType else "movie"
+                        val type = item.mediaType.ifBlank { "movie" }
                         navController.navigate(
                             "${MovieAppScreen.MOVIE_HOME_DETAILS.route}/${item.mediaId}/$type"
                         )
