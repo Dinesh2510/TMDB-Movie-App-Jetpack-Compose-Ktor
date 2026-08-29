@@ -24,6 +24,7 @@ import com.app.movieapp.data.remote.response.MovieResponse
 import com.app.movieapp.models.SeasonDetailsDTO
 import com.app.movieapp.models.TvShowDetailsDTO
 import com.app.movieapp.models.TvShowResponse
+import com.app.movieapp.models.WatchProviderResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -46,6 +47,10 @@ class TvShowRepositoryImpl(
 
     override fun getSimilarTvShowsRepo(tvId: Int): Flow<TvShowResponse> = flow {
         val response = apiService.getSimilarTvShows(filmId = tvId)
+        emit(response)
+    }
+   override fun getTvWatchProvidersRepo(tvId: Int): Flow<WatchProviderResponse> = flow {
+        val response = apiService.getTvWatchProviders(tvId)
         emit(response)
     }
 }

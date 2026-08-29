@@ -23,13 +23,14 @@ import com.app.movieapp.data.remote.ApiService
 import com.app.movieapp.models.SeasonDetailsDTO
 import com.app.movieapp.models.TvShowDetailsDTO
 import com.app.movieapp.models.TvShowResponse
+import com.app.movieapp.models.WatchProviderResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-
 interface TvShowRepository {
     fun getTvShowDetailsRepo(tvId: Int): Flow<TvShowDetailsDTO>
     fun getSeasonDetailsRepo(tvId: Int, seasonNumber: Int): Flow<SeasonDetailsDTO>
-    fun getSimilarTvShowsRepo(tvId: Int): Flow<TvShowResponse>}
-
+    fun getSimilarTvShowsRepo(tvId: Int): Flow<TvShowResponse>
+    fun getTvWatchProvidersRepo(tvId: Int): Flow<WatchProviderResponse>
+}

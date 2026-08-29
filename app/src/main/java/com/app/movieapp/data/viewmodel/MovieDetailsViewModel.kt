@@ -10,6 +10,7 @@ import com.app.movieapp.data.remote.response.VideoResponse
 import com.app.movieapp.data.remote.response.VideoResult
 import com.app.movieapp.data.repository.MovieDetailsRepository
 import com.app.movieapp.models.Cast
+import com.app.movieapp.models.CountryWatchProvidersDTO
 import com.app.movieapp.utlis.MovieState
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
@@ -50,6 +51,9 @@ class MovieDetailsViewModel(
 
     private val _trailerKey = MutableStateFlow<String?>(null)
     val trailerKey: StateFlow<String?> = _trailerKey.asStateFlow()
+
+    private val _watchProvidersState = MutableStateFlow<MovieState<CountryWatchProvidersDTO>>(MovieState.Loading)
+    val watchProvidersState: StateFlow<MovieState<CountryWatchProvidersDTO>> = _watchProvidersState.asStateFlow()
 
     fun fetchAllMovieDetails(movieId: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -118,5 +122,23 @@ class MovieDetailsViewModel(
         return results.firstOrNull { it.site.equals("YouTube", ignoreCase = true) && it.type.equals("Trailer", ignoreCase = true) && it.official }
             ?: results.firstOrNull { it.site.equals("YouTube", ignoreCase = true) && it.type.equals("Trailer", ignoreCase = true) }
             ?: results.firstOrNull { it.site.equals("YouTube", ignoreCase = true) }
+    }
+
+    fun fetchMovieWatchProviders(movieId: Int, countryCode: String = "IN") {
+        viewModelScope.launch(Dispatchers.IO) {
+            _watchProvidersState.value = MovieState.Loading
+            try {
+                val response = repository.getMovieWatchProvidersRepo(movieId).first()
+                // Dynamically pick country code or fallback to US / first available region
+                val countryProviders = response.results[countryCode]
+                    ?: response.results["US"]
+                    ?: response.results.values.firstOrNull()
+                    ?: CountryWatchProvidersDTO()
+
+                _watchProvidersState.value = MovieState.Success(countryProviders)
+            } catch (e: Exception) {
+                _watchProvidersState.value = MovieState.Error("Failed to fetch watch providers.")
+            }
+        }
     }
 }

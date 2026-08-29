@@ -4,7 +4,7 @@
  * Project : TMDB Ktor
  * Module : TMDB_Ktor.app.main
  * Created on : 2026-08-27 22:34
- * Last modified: 2026-08-28 00:01
+ * Last modified: 2026-08-29 14:15
  *
  * Author : Dinesh
  * GitHub : https://github.com/Dinesh2510
@@ -21,6 +21,9 @@ package com.app.movieapp.screens
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,10 +51,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -70,6 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -96,8 +104,10 @@ import com.app.movieapp.data.viewmodel.TvDetailsViewModel
 import com.app.movieapp.data.viewmodel.WatchListViewModel
 import com.app.movieapp.graph.MovieAppScreen
 import com.app.movieapp.models.Cast
+import com.app.movieapp.models.CountryWatchProvidersDTO
 import com.app.movieapp.models.EpisodeDTO
 import com.app.movieapp.models.GenreDTO
+import com.app.movieapp.models.ProviderItemDTO
 import com.app.movieapp.models.SeasonSummaryDTO
 import com.app.movieapp.models.TvShowDetailsDTO
 import com.app.movieapp.screens.components.CinematicErrorState
@@ -129,6 +139,7 @@ fun TvDetailsScreen(
 
     LaunchedEffect(tvId) {
         viewModel.loadTvShowDetails(tvId)
+        viewModel.fetchTvWatchProviders(tvId)
         watchListViewModel.exist(tvId)
     }
 
@@ -137,6 +148,7 @@ fun TvDetailsScreen(
     val episodesState by viewModel.episodesState.collectAsState()
     val videoState by viewModel.videoResponses.collectAsState()
     val similarTvState by viewModel.similarTvState.collectAsState()
+    val watchProvidersState by viewModel.watchProvidersState.collectAsState()
     val exist = watchListViewModel.exist.value
 
     Box(
@@ -157,6 +169,7 @@ fun TvDetailsScreen(
                     onRetryClick = {
                         hapticController.trigger(AppHaptic.Click)
                         viewModel.loadTvShowDetails(tvId)
+                        viewModel.fetchTvWatchProviders(tvId)
                     }
                 )
             }
@@ -168,6 +181,7 @@ fun TvDetailsScreen(
                     selectedSeasonNumber = selectedSeasonNumber,
                     episodesState = episodesState,
                     similarTvState = similarTvState,
+                    watchProvidersState = watchProvidersState,
                     videoState = videoState,
                     navController = navController,
                     isWatchlisted = exist != 0,
@@ -211,6 +225,7 @@ private fun TvDetailsContent(
     selectedSeasonNumber: Int,
     episodesState: MovieState<List<EpisodeDTO>>,
     similarTvState: MovieState<List<TvShowDetailsDTO>>,
+    watchProvidersState: MovieState<CountryWatchProvidersDTO>,
     videoState: MovieState<VideoResponse>,
     navController: NavHostController,
     isWatchlisted: Boolean,
@@ -258,14 +273,7 @@ private fun TvDetailsContent(
 
                 tvDetails.overview?.let { overview ->
                     if (overview.isNotBlank()) {
-                        Text(
-                            text = overview,
-                            color = TmdbCinematicTheme.TextPrimary.copy(alpha = 0.9f),
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        ExpandableOverviewSection(overview = overview)
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
@@ -310,6 +318,22 @@ private fun TvDetailsContent(
 
                 HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Watch Providers (Streaming Availability) — Conditional spacing
+                if (watchProvidersState is MovieState.Success) {
+                    val providers = watchProvidersState.data
+                    val hasProviders = !providers?.flatrate.isNullOrEmpty() ||
+                            !providers?.rent.isNullOrEmpty() ||
+                            !providers?.buy.isNullOrEmpty()
+
+                    if (hasProviders) {
+                        TvWatchProvidersSection(watchProvidersState = watchProvidersState)
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                } else if (watchProvidersState is MovieState.Loading) {
+                    TvWatchProvidersSection(watchProvidersState = watchProvidersState)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
 
@@ -524,6 +548,192 @@ private fun TvDetailsContent(
                 }
             }
         }
+    }
+}
+
+// ── EXPANDABLE OVERVIEW COMPOSABLE ──
+
+// ── TV WATCH PROVIDERS COMPOSABLE ──
+@Composable
+fun TvWatchProvidersSection(
+    watchProvidersState: MovieState<CountryWatchProvidersDTO>
+) {
+    val context = LocalContext.current
+    val hapticController = rememberHapticController()
+
+    when (watchProvidersState) {
+        is MovieState.Loading -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = TmdbCinematicTheme.CoralAccent,
+                    strokeWidth = 2.dp
+                )
+                Text(
+                    text = "Checking streaming availability...",
+                    color = TmdbCinematicTheme.TextSecondary,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        is MovieState.Error -> {
+            // Silently hide if error or missing providers
+        }
+
+        is MovieState.Success -> {
+            val countryProviders = watchProvidersState.data
+            val webLink = countryProviders?.link
+
+            val streamList = countryProviders?.flatrate ?: emptyList()
+            val rentList = countryProviders?.rent ?: emptyList()
+            val buyList = countryProviders?.buy ?: emptyList()
+
+            if (streamList.isNotEmpty() || rentList.isNotEmpty() || buyList.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF0F1523).copy(alpha = 0.6f))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "WHERE TO WATCH",
+                        color = TmdbCinematicTheme.TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.2.sp
+                    )
+
+                    val openStreamingPage: () -> Unit = {
+                        webLink?.let { url ->
+                            hapticController.trigger(AppHaptic.Click)
+                            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+                            context.startActivity(intent)
+                        }
+                    }
+
+                    if (streamList.isNotEmpty()) {
+                        ProviderCategoryGroup(
+                            title = "Stream",
+                            providers = streamList,
+                            onProviderClick = openStreamingPage
+                        )
+                    }
+
+                    if (rentList.isNotEmpty()) {
+                        ProviderCategoryGroup(
+                            title = "Rent",
+                            providers = rentList,
+                            onProviderClick = openStreamingPage
+                        )
+                    }
+
+                    if (buyList.isNotEmpty()) {
+                        ProviderCategoryGroup(
+                            title = "Buy",
+                            providers = buyList,
+                            onProviderClick = openStreamingPage
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderCategoryGroup(
+    title: String,
+    providers: List<ProviderItemDTO>,
+    onProviderClick: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = title,
+            color = Color.White.copy(alpha = 0.9f),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items(providers, key = { it.providerId }) { provider ->
+                ProviderLogoCard(
+                    provider = provider,
+                    onClick = onProviderClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderLogoCard(
+    provider: ProviderItemDTO,
+    onClick: () -> Unit
+) {
+    val logoUrl = provider.logoPath?.let { BASE_POSTER_IMAGE_URL + it } ?: ""
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(52.dp)
+            .clickable { onClick() }
+    ) {
+        Card(
+            modifier = Modifier
+                .size(52.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    shape = RoundedCornerShape(14.dp),
+                    spotColor = Color.Black.copy(alpha = 0.5f)
+                ),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2638)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(14.dp)
+                    )
+            ) {
+                AsyncImage(
+                    model = logoUrl,
+                    contentDescription = provider.providerName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(14.dp))
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = provider.providerName,
+            color = TmdbCinematicTheme.TextSecondary,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -1053,6 +1263,7 @@ private fun PrimeTvDetailsScreenPreview() {
             selectedSeasonNumber = 4,
             episodesState = MovieState.Success(mockEpisodes),
             similarTvState = MovieState.Success(emptyList()),
+            watchProvidersState = MovieState.Loading,
             videoState = MovieState.Loading,
             navController = rememberNavController(),
             isWatchlisted = true,

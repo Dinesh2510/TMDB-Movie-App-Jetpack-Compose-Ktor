@@ -28,6 +28,7 @@ import com.app.movieapp.data.remote.response.VideoResponse
 import com.app.movieapp.models.SeasonDetailsDTO
 import com.app.movieapp.models.TvShowDetailsDTO
 import com.app.movieapp.models.TvShowResponse
+import com.app.movieapp.models.WatchProviderResponse
 import com.app.movieapp.utlis.Constants.Companion.API_KEY
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -316,6 +317,21 @@ class ApiService(private val client: HttpClient) {
     ): SeasonDetailsDTO = client.get("tv/$tvId/season/$seasonNumber") {
         parameter("api_key", apiKey)
         parameter("language", language)
+    }.body()
+    // Fetch Watch Providers for Movies
+    suspend fun getMovieWatchProviders(
+        movieId: Int,
+        apiKey: String = API_KEY
+    ): WatchProviderResponse = client.get("movie/$movieId/watch/providers") {
+        parameter("api_key", apiKey)
+    }.body()
+
+    // Fetch Watch Providers for TV Shows
+    suspend fun getTvWatchProviders(
+        tvId: Int,
+        apiKey: String = API_KEY
+    ): WatchProviderResponse = client.get("tv/$tvId/watch/providers") {
+        parameter("api_key", apiKey)
     }.body()
 
 }

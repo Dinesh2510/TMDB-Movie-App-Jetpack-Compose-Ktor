@@ -27,6 +27,7 @@ import com.app.movieapp.R
 import com.app.movieapp.data.remote.response.VideoResponse
 import com.app.movieapp.data.repository.MovieDetailsRepository
 import com.app.movieapp.data.repository.TvShowRepository
+import com.app.movieapp.models.CountryWatchProvidersDTO
 import com.app.movieapp.models.EpisodeDTO
 import com.app.movieapp.models.SeasonSummaryDTO
 import com.app.movieapp.models.TvShowDetailsDTO
@@ -73,6 +74,9 @@ class TvDetailsViewModel(
     val similarTvState: StateFlow<MovieState<List<TvShowDetailsDTO>>> = _similarTvState.asStateFlow()
 
     private var currentTvId: Int = -1
+
+    private val _watchProvidersState = MutableStateFlow<MovieState<CountryWatchProvidersDTO>>(MovieState.Loading)
+    val watchProvidersState: StateFlow<MovieState<CountryWatchProvidersDTO>> = _watchProvidersState.asStateFlow()
 
     fun loadTvShowDetails(tvId: Int) {
         currentTvId = tvId
@@ -149,6 +153,23 @@ class TvDetailsViewModel(
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching TV videos: ${e.message}")
                 _videoResponses.value = MovieState.Error("Failed to fetch trailers.")
+            }
+        }
+    }
+
+    fun fetchTvWatchProviders(tvId: Int, countryCode: String = "IN") {
+        viewModelScope.launch(Dispatchers.IO) {
+            _watchProvidersState.value = MovieState.Loading
+            try {
+                val response = tvRepository.getTvWatchProvidersRepo(tvId).first()
+                val countryProviders = response.results[countryCode]
+                    ?: response.results["US"]
+                    ?: response.results.values.firstOrNull()
+                    ?: CountryWatchProvidersDTO()
+
+                _watchProvidersState.value = MovieState.Success(countryProviders)
+            } catch (e: Exception) {
+                _watchProvidersState.value = MovieState.Error("Failed to fetch watch providers.")
             }
         }
     }
