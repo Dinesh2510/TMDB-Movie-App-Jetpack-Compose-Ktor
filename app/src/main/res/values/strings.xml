@@ -18,7 +18,7 @@
   -->
 
 <resources>
-    <string name="app_name">TMDB Compose</string>
+    <string name="app_name">TMDB Compose Cinematics</string>
     <string name="movies_more">more</string>
     <string name="title_activity_home_componets">HomeComponets</string>
     <string name="release_date">Release Date</string>

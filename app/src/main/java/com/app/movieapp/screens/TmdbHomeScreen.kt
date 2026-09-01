@@ -92,6 +92,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.AsyncImage
 import com.app.movieapp.data.local.ContinueWatchingModel
 import com.app.movieapp.data.local.WatchListModel
@@ -140,7 +143,7 @@ fun Movies.toWatchListModel(): WatchListModel {
 }
 
 // Dynamic media_type resolver
- fun Movies.getMediaType(): String {
+fun Movies.getMediaType(): String {
     return when {
         this.mediaType != null -> this.mediaType
         this.name != null -> "tv"
@@ -163,7 +166,7 @@ fun TmdbHomeScreen(
 ) {
     val homeState by viewModel.homeFeedState.collectAsState()
     val continueWatchingList by continueWatchingViewModel.continueWatchingList.collectAsState()
-
+    val popularPagingItems = viewModel.popularAllListState.collectAsLazyPagingItems()
     // Observe Watchlist
     val watchListFlow by watchListViewModel.myMovieData
     val watchListItems by watchListFlow.collectAsState(initial = emptyList())
@@ -315,10 +318,23 @@ fun TmdbHomeScreen(
                         }
                     }
 
-                    // 8. "Trending This Week" Section
+// 8. "RANKED" HORIZONTAL SECTION (Prime Video Poster Style)
                     if (trendingMovies.isNotEmpty()) {
                         item {
-                            Spacer(modifier = Modifier.height(20.dp))
+                            PaginatedRankedSection(
+                                pagingItems = popularPagingItems,
+                                onSeeAllClick = {
+                                    navController.navigate("${MovieAppScreen.MOVIE_SEE_ALL.route}/$popularAllListScreen")
+                                },
+                                onMovieClick = { movie ->
+                                    navController.navigateToDetails(movie)
+                                }
+                            )
+                        }
+
+                        // 9. "TRENDING THIS WEEK" VERTICAL LISTING SECTION
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
                             SectionHeader(
                                 title = "Trending This Week",
                                 onSeeAllClick = {
@@ -1406,4 +1422,128 @@ private fun MetadataPill(text: String) {
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
         )
     }
+}
+
+@Composable
+fun PaginatedRankedSection(
+    pagingItems: LazyPagingItems<Movies>,
+    onSeeAllClick: () -> Unit,
+    onMovieClick: (Movies) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (pagingItems.itemCount == 0 && pagingItems.loadState.refresh !is LoadState.Loading) {
+        return
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
+        SectionHeader(
+            title = "Ranked",
+            onSeeAllClick = onSeeAllClick
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items(
+                count = pagingItems.itemCount,
+                key = { index -> pagingItems[index]?.id ?: index }
+            ) { index ->
+                pagingItems[index]?.let { movie ->
+                    RankedPosterCard(
+                        movie = movie,
+                        onMovieClick = onMovieClick
+                    )
+                }
+            }
+
+            // Append Pagination Loader
+            if (pagingItems.loadState.append is LoadState.Loading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(180.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CenteredCircularProgressIndicator()
+                    }
+                }
+            }
+        }
+    }
+}
+@Composable
+fun RankedPosterCard(
+    movie: Movies,
+    onMovieClick: (Movies) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val posterUrl = "$BASE_POSTER_IMAGE_URL${movie.posterPath}"
+
+    Column(
+        modifier = modifier
+            .width(125.dp)
+            .clickable { onMovieClick(movie) }
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF131927)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+            ) {
+                AsyncImage(
+                    model = posterUrl,
+                    contentDescription = movie.displayTitle,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(12.dp))
+                )
+
+                // Bottom Gradient Scrim
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                            )
+                        )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = movie.displayTitle,
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+
 }
