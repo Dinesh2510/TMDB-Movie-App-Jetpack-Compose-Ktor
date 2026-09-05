@@ -23,17 +23,34 @@ Welcome to the **TMDB Movie App v2.0**! A modern, high-performance, Netflix and 
 
 ---
 
-## 📸 Screenshots & UI Layouts
+## 📱 Screenshots
 
-| Home Screen | Catalog / Top Rated | Video Selector Dialog |
-| :---: | :---: | :---: |
-| ![Home Screen](screenshots/1.png) | ![Top Rated](screenshots/2.png) | ![Video Dialog](screenshots/6.png) |
+|        Splash Screen         |         Onboarding         |             Sign Up             |
+|:----------------------------:|:--------------------------:|:-------------------------------:|
+| ![Home Screen](assets/1.png) | ![Top Rated](assets/2.png) | ![Video Selector](assets/3.png) |
 
-| Movie Details | Continue Watching | Wishlist |
-| :---: | :---: | :---: |
-| ![Movie Details](screenshots/3.png) | ![Search](screenshots/5.png) | ![Wishlist](screenshots/4.png) |
+|            Sign In             |                Home                |          Home 2           |
+|:------------------------------:|:----------------------------------:|:-------------------------:|
+| ![Movie Details](assets/4.png) | ![Continue Watching](assets/5.png) | ![Wishlist](assets/6.png) |
 
----
+|         Popular         |     Tv Show Details      |         Tv Show Details 2         |
+|:-----------------------:|:------------------------:|:---------------------------------:|
+| ![Search](assets/7.png) | ![Profile](assets/8.png) | ![Personal Details](assets/9.png) |
+
+|          Movie Details          |            Movie Details 2             |      Saved (Wishlist)      |
+|:-------------------------------:|:--------------------------------------:|:--------------------------:|
+| ![Notifications](assets/10.png) | ![Security and Privacy](assets/11.png) | ![Settings](assets/12.png) |
+
+|             Profile              |          Search          |         Profile          |
+|:--------------------------------:|:------------------------:|:------------------------:|
+| ![Popular Movies](assets/13.png) | ![Genres](assets/14.png) | ![Player](assets/15.png) |
+
+
+## 🎬 YouTube Video Demo
+
+Check out the complete video demonstration of the application on YouTube:
+
+[![YouTube Video Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
 
 ## ✨ Features & Highlights
 
