@@ -50,7 +50,7 @@ Welcome to the **TMDB Movie App v2.0**! A modern, high-performance, Netflix and 
 
 Check out the complete video demonstration of the application on YouTube:
 
-[![YouTube Video Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
+[![YouTube Video Demo](https://img.youtube.com/vi/Lr4QLtpqSGI/maxresdefault.jpg)](https://www.youtube.com/watch?v=Lr4QLtpqSGI)
 
 ## ✨ Features & Highlights
 
